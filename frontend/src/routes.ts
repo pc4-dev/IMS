@@ -1,0 +1,203 @@
+import { 
+  LayoutDashboard, 
+  ShieldAlert, 
+  BookOpen, 
+  Users, 
+  Package, 
+  ClipboardList, 
+  ShoppingCart, 
+  ArrowDownToLine, 
+  ArrowUpFromLine, 
+  Undo2, 
+  Trash2, 
+  CheckSquare, 
+  FileText, 
+  Archive 
+} from "lucide-react";
+
+export interface RouteConfig {
+  id: string;
+  label: string;
+  icon: any;
+  roles: string[];
+}
+
+export const ROUTES: RouteConfig[] = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Project Manager",
+      "Store Incharge",
+      "Inventory Manager",
+      "Site Engineer",
+      "Vendor",
+      "Accountant",
+    ],
+  },
+  {
+    id: "superadmin",
+    label: "Super Admin",
+    icon: ShieldAlert,
+    roles: ["Super Admin"],
+  },
+  {
+    id: "catalogue",
+    label: "Catalogue",
+    icon: BookOpen,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Project Manager",
+      "Inventory Manager",
+    ],
+  },
+  {
+    id: "vendors",
+    label: "Vendors",
+    icon: Users,
+    roles: ["Super Admin", "Director", "AGM", "Inventory Manager", "Accountant"],
+  },
+  {
+    id: "inventory",
+    label: "Inventory",
+    icon: Package,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Project Manager",
+      "Store Incharge",
+      "Inventory Manager",
+    ],
+  },
+  {
+    id: "planning",
+    label: "Material Plan",
+    icon: ClipboardList,
+    roles: ["Super Admin", "Director", "AGM", "Project Manager", "Inventory Manager"],
+  },
+  {
+    id: "pos",
+    label: "Purchase Orders",
+    icon: ShoppingCart,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Project Manager",
+      "Inventory Manager",
+      "Vendor",
+      "Accountant",
+    ],
+  },
+  {
+    id: "grn",
+    label: "GRN",
+    icon: ArrowDownToLine,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+      "Accountant",
+    ],
+  },
+  {
+    id: "inward",
+    label: "Inward",
+    icon: ArrowDownToLine,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+      "Site Engineer",
+      "Accountant",
+    ],
+  },
+  {
+    id: "outward",
+    label: "Outward",
+    icon: ArrowUpFromLine,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+      "Site Engineer",
+      "Accountant",
+    ],
+  },
+  {
+    id: "inward-returns",
+    label: "Inward Return",
+    icon: Undo2,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+      "Site Engineer",
+    ],
+  },
+  {
+    id: "outward-returns",
+    label: "Outward Return",
+    icon: Undo2,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+      "Site Engineer",
+    ],
+  },
+  {
+    id: "writeoffs",
+    label: "Write-offs",
+    icon: Trash2,
+    roles: ["Super Admin", "Director", "AGM", "Inventory Manager"],
+  },
+  {
+    id: "stockcheck",
+    label: "Stock Check",
+    icon: CheckSquare,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+      "Site Engineer",
+    ],
+  },
+  {
+    id: "stockcheck-reports",
+    label: "Stock Check Reports",
+    icon: FileText,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+    ],
+  },
+  {
+    id: "archive",
+    label: "Archive",
+    icon: Archive,
+    roles: ["Super Admin", "Director", "AGM", "Inventory Manager"],
+  },
+];
