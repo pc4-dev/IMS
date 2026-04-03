@@ -64,6 +64,8 @@ export const PublicInward = () => {
     if (!data.supplier) newErrors.supplier = "Supplier is required";
     if (!data.challanNo) newErrors.challanNo = "Challan/Invoice No. is required";
     if (!data.mrNo) newErrors.mrNo = "MR No. is required";
+    if (!data.materialPhotoUrl) newErrors.materialPhotoUrl = "Material photo is required";
+    if (!data.personPhotoUrl) newErrors.personPhotoUrl = "Challan/Invoice photo is required";
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -82,12 +84,12 @@ export const PublicInward = () => {
     }
   };
 
-  const handlePersonPhoto = async (file: File) => {
-    setLoadingField("person");
+  const handleChallanPhoto = async (file: File) => {
+    setLoadingField("challan");
     try {
       const { url } = await uploadPublicImage(file);
       setNewInward(prev => ({ ...prev, personPhotoUrl: url }));
-      toast.success("Person photo uploaded");
+      toast.success("Challan/Invoice photo uploaded");
     } catch (error: any) {
       toast.error(`Failed to upload image: ${error.message}`);
     } finally {
@@ -269,13 +271,12 @@ export const PublicInward = () => {
                 required
                 error={errors.qty}
               />
-              <SField
+              <Field
                 label="Supplier"
                 value={newInward.supplier}
                 onChange={(e: any) =>
                   setNewInward(prev => ({ ...prev, supplier: e.target.value }))
                 }
-                options={vendors.map((v) => v.name)}
                 required
                 error={errors.supplier}
               />
@@ -304,18 +305,20 @@ export const PublicInward = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ImageUpload
-                label="Material Photo"
+                label="Material Photo *"
                 id="material-photo-pub"
                 value={newInward.materialPhotoUrl}
                 onChange={handleMaterialPhoto}
                 loading={loadingField === "material"}
+                error={errors.materialPhotoUrl}
               />
               <ImageUpload
-                label="Person Photo"
-                id="person-photo-pub"
+                label="Challan / Invoice Photo *"
+                id="challan-photo-pub"
                 value={newInward.personPhotoUrl}
-                onChange={handlePersonPhoto}
-                loading={loadingField === "person"}
+                onChange={handleChallanPhoto}
+                loading={loadingField === "challan"}
+                error={errors.personPhotoUrl}
               />
             </div>
 

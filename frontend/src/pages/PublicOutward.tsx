@@ -167,7 +167,7 @@ export const PublicOutward = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Material Issue Form</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Material Outward Form</h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Record materials issued from the store</p>
         </div>
 
@@ -284,20 +284,12 @@ export const PublicOutward = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SField
+              <Field
                 label="Location *"
                 value={newOutward.location}
                 onChange={(e: any) =>
                   setNewOutward(prev => ({ ...prev, location: e.target.value }))
                 }
-                options={[
-                  "Villa No.",
-                  "Club House",
-                  "Plant",
-                  "G+10",
-                  "Main Gate",
-                  "Other",
-                ]}
                 required
                 error={errors.location}
               />

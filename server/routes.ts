@@ -157,7 +157,7 @@ router.post('/auth/login', async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      // Removed maxAge to make it a session cookie
     });
     console.log(`Login successful for: ${trimmedEmail}`);
     res.json({
@@ -193,7 +193,11 @@ router.get('/auth/me', async (req, res) => {
 });
 
 router.post('/auth/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
+  });
   res.json({ success: true, message: 'Logged out successfully' });
 });
 

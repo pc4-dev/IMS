@@ -62,6 +62,8 @@ export const InwardPage = () => {
     if (!data.supplier) newErrors.supplier = "Supplier is required";
     if (!data.challanNo) newErrors.challanNo = "Challan/Invoice No. is required";
     if (!data.mrNo) newErrors.mrNo = "MR No. is required";
+    if (!data.materialPhotoUrl) newErrors.materialPhotoUrl = "Material photo is required";
+    if (!data.personPhotoUrl) newErrors.personPhotoUrl = "Challan/Invoice photo is required";
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -241,7 +243,7 @@ export const InwardPage = () => {
                     Supplier
                   </th>
                   <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
-                    Challan / MR
+                    Challan / Invoice
                   </th>
                   <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
                     Photos
@@ -290,7 +292,7 @@ export const InwardPage = () => {
                           <div 
                             className="w-8 h-8 rounded border border-[#E8ECF0] dark:border-gray-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => setPreviewImage(inw.personPhotoUrl!)}
-                            title="Person Photo"
+                            title="Challan / Invoice Photo"
                           >
                             <img src={inw.personPhotoUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           </div>
@@ -436,13 +438,13 @@ export const InwardPage = () => {
                 )}
                 {selectedInward.personPhotoUrl && (
                   <div>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Person Photo</p>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Challan / Invoice Photo</p>
                     <div className="rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden bg-gray-50 dark:bg-gray-900">
                       <img 
                         src={selectedInward.personPhotoUrl} 
                         className="w-full h-64 object-contain" 
                         referrerPolicy="no-referrer" 
-                        alt="Person"
+                        alt="Challan / Invoice"
                       />
                     </div>
                   </div>
@@ -594,18 +596,20 @@ export const InwardPage = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ImageUpload
-                label="Material Photo"
+                label="Material Photo *"
                 id="material-photo-inw"
                 value={newInward.materialPhotoUrl}
                 onChange={handleMaterialPhoto}
                 loading={loadingField === "material"}
+                error={errors.materialPhotoUrl}
               />
               <ImageUpload
-                label="Person Photo"
-                id="person-photo-inw"
+                label="Challan / Invoice Photo *"
+                id="challan-photo-inw"
                 value={newInward.personPhotoUrl}
                 onChange={handlePersonPhoto}
                 loading={loadingField === "person"}
+                error={errors.personPhotoUrl}
               />
             </div>
 
