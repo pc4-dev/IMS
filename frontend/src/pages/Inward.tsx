@@ -498,7 +498,7 @@ export const InwardPage = () => {
                 <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-900 border border-[#E8ECF0] dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {inventory
                     .filter((i) =>
-                      i.name.toLowerCase().includes(searchItem.toLowerCase()),
+                      i.name?.toLowerCase().includes(searchItem.toLowerCase()),
                     )
                     .map((i) => (
                       <div

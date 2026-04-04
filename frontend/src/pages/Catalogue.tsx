@@ -78,8 +78,8 @@ export const Catalogue = () => {
   const filtered = catalogue.filter((c) => {
     return (
       c.name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.sku.toLowerCase().includes(search.toLowerCase()) ||
-      c.brand.toLowerCase().includes(search.toLowerCase())
+      c.sku?.toLowerCase().includes(search.toLowerCase()) ||
+      c.brand?.toLowerCase().includes(search.toLowerCase())
     );
   });
 

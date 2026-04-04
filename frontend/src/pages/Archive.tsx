@@ -9,8 +9,8 @@ export const Archive = () => {
 
   const filtered = inventory.filter(
     (i) =>
-      i.name.toLowerCase().includes(search.toLowerCase()) ||
-      i.sku.toLowerCase().includes(search.toLowerCase()),
+      i.name?.toLowerCase().includes(search.toLowerCase()) ||
+      i.sku?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
