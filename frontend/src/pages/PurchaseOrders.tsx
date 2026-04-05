@@ -292,7 +292,7 @@ export const PurchaseOrders = () => {
   const addItem = (invItem: any) => {
     const item: POLineItem = {
       sku: invItem.sku,
-      name: invItem.name,
+      name: invItem.itemName,
       qty: 1,
       unit: invItem.unit,
       rate: 0,
@@ -660,7 +660,7 @@ export const PurchaseOrders = () => {
                 <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {inventory
                     .filter((i) =>
-                      i.name?.toLowerCase().includes(searchItem.toLowerCase()),
+                      i.itemName?.toLowerCase().includes(searchItem.toLowerCase()),
                     )
                     .map((i) => (
                       <div
@@ -668,7 +668,7 @@ export const PurchaseOrders = () => {
                         onClick={() => addItem(i)}
                         className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-[13px] text-gray-900 dark:text-white"
                       >
-                        {i.name} ({i.sku}) - Stock: {i.liveStock}
+                        {i.itemName} ({i.sku}) - Stock: {i.liveStock}
                       </div>
                     ))}
                 </div>

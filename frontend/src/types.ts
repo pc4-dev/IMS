@@ -8,7 +8,7 @@ export type Role =
 
 export interface InventoryItem {
   sku: string;
-  name: string;
+  itemName: string;
   category: string;
   subCategory: string;
   unit: string;
@@ -198,6 +198,41 @@ export interface Outward {
   category?: string;
   materialPhotoUrl?: string;
   handoverPhotoUrl?: string;
+}
+
+export interface MaterialTransferOutward {
+  id: string;
+  sku: string;
+  name: string;
+  qty: number;
+  unit: string;
+  date: string;
+  fromLocation: string;
+  toLocation: string;
+  handoverTo: string;
+  project?: string;
+  category?: string;
+  materialPhotoUrl?: string;
+  handoverPhotoUrl?: string;
+  remarks?: string;
+  module?: string;
+}
+
+export interface MaterialTransferInward {
+  id: string;
+  sku: string;
+  name: string;
+  qty: number;
+  unit: string;
+  date: string;
+  location: string;
+  receivedBy: string;
+  project?: string;
+  category?: string;
+  materialPhotoUrl?: string;
+  personPhotoUrl?: string;
+  remarks?: string;
+  module?: string;
 }
 
 export interface InwardReturn {

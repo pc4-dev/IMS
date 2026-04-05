@@ -2,34 +2,37 @@ import React, { useState, useEffect } from "react";
 import { useAppStore } from "../store";
 import { Card, Btn, Modal, Field, SField, ImageUpload } from "../components/ui";
 import { Search, CheckCircle, AlertTriangle } from "lucide-react";
-import { Outward, InventoryItem } from "../types";
+import { MaterialTransferOutward, InventoryItem } from "../types";
 import { genId, todayStr } from "../utils";
 import { PROJECTS, CATEGORIES, UNITS } from "../data";
 import { toast } from "react-hot-toast";
 
-const INITIAL_OUTWARD: Partial<Outward> = {
+const INITIAL_TRANSFER: Partial<MaterialTransferOutward> = {
   sku: "",
   name: "",
   qty: 0,
   unit: "",
-  location: "",
+  fromLocation: "",
+  toLocation: "",
   handoverTo: "",
   project: "",
   category: "",
   materialPhotoUrl: "",
   handoverPhotoUrl: "",
+  remarks: "",
+  module: "Public",
 };
 
-export const PublicOutward = () => {
+export const PublicMaterialTransferOutward = () => {
   const { 
     fetchPublicInventory, 
-    submitPublicOutward,
+    submitPublicMaterialTransferOutward,
     uploadPublicImage,
     actionLoading
   } = useAppStore();
 
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [newOutward, setNewOutward] = useState<Partial<Outward>>(INITIAL_OUTWARD);
+  const [newTransfer, setNewTransfer] = useState<Partial<MaterialTransferOutward>>(INITIAL_TRANSFER);
   const [searchItem, setSearchItem] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loadingField, setLoadingField] = useState<string | null>(null);
@@ -54,7 +57,8 @@ export const PublicOutward = () => {
     if (!data.category) newErrors.category = "Category is required";
     if (!data.qty || data.qty <= 0) newErrors.qty = "Valid quantity is required";
     if (!data.unit) newErrors.unit = "Unit is required";
-    if (!data.location) newErrors.location = "Location is required";
+    if (!data.fromLocation) newErrors.fromLocation = "From Location is required";
+    if (!data.toLocation) newErrors.toLocation = "To Location is required";
     if (!data.handoverTo) newErrors.handoverTo = "Handover To is required";
     
     setErrors(newErrors);
@@ -65,7 +69,7 @@ export const PublicOutward = () => {
     setLoadingField("material");
     try {
       const { url } = await uploadPublicImage(file);
-      setNewOutward(prev => ({ ...prev, materialPhotoUrl: url }));
+      setNewTransfer(prev => ({ ...prev, materialPhotoUrl: url }));
       toast.success("Material photo uploaded");
     } catch (error: any) {
       toast.error(`Failed to upload image: ${error.message}`);
@@ -78,7 +82,7 @@ export const PublicOutward = () => {
     setLoadingField("handover");
     try {
       const { url } = await uploadPublicImage(file);
-      setNewOutward(prev => ({ ...prev, handoverPhotoUrl: url }));
+      setNewTransfer(prev => ({ ...prev, handoverPhotoUrl: url }));
       toast.success("Handover photo uploaded");
     } catch (error: any) {
       toast.error(`Failed to upload image: ${error.message}`);
@@ -88,37 +92,40 @@ export const PublicOutward = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm(newOutward)) {
+    if (!validateForm(newTransfer)) {
       toast.error("Please fill all required fields");
       return;
     }
 
-    const inv = inventory.find((i) => i.sku === newOutward.sku);
-    if (!inv || inv.liveStock < newOutward.qty!) {
+    const inv = inventory.find((i) => i.sku === newTransfer.sku);
+    if (!inv || inv.liveStock < newTransfer.qty!) {
       setErrors({ qty: "Insufficient stock available!" });
       toast.error("Insufficient stock!");
       return;
     }
 
-    const outward: Outward = {
-      id: genId("PUB-MIS", Date.now() % 10000),
-      sku: newOutward.sku!,
-      name: newOutward.name!,
-      qty: Number(newOutward.qty!),
-      unit: newOutward.unit!,
+    const transfer: MaterialTransferOutward = {
+      id: genId("PUB-MTO", Date.now() % 10000),
+      sku: newTransfer.sku!,
+      name: newTransfer.name!,
+      qty: Number(newTransfer.qty!),
+      unit: newTransfer.unit!,
       date: todayStr(),
-      location: newOutward.location!,
-      handoverTo: newOutward.handoverTo!,
-      project: newOutward.project,
-      category: newOutward.category,
-      materialPhotoUrl: newOutward.materialPhotoUrl,
-      handoverPhotoUrl: newOutward.handoverPhotoUrl,
+      fromLocation: newTransfer.fromLocation!,
+      toLocation: newTransfer.toLocation!,
+      handoverTo: newTransfer.handoverTo!,
+      project: newTransfer.project,
+      category: newTransfer.category,
+      materialPhotoUrl: newTransfer.materialPhotoUrl,
+      handoverPhotoUrl: newTransfer.handoverPhotoUrl,
+      remarks: newTransfer.remarks,
+      module: "Public",
     };
 
     try {
-      await submitPublicOutward(outward);
+      await submitPublicMaterialTransferOutward(transfer);
       setSubmitted(true);
-      toast.success("Material Issue record submitted successfully!");
+      toast.success("Material Transfer record submitted successfully!");
     } catch (error: any) {
       setErrors({ form: `Failed to submit: ${error.message}` });
       toast.error("Submission failed");
@@ -126,12 +133,13 @@ export const PublicOutward = () => {
   };
 
   const selectItem = (item: any) => {
-    setNewOutward({
-      ...newOutward,
+    setNewTransfer({
+      ...newTransfer,
       sku: item.sku,
       name: item.itemName,
       unit: item.unit,
       category: item.category,
+      project: item.lastProject || "",
     });
     setSearchItem("");
   };
@@ -147,14 +155,14 @@ export const PublicOutward = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Submission Successful!</h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Your material issue transaction has been recorded.
+            Your material transfer transaction has been recorded.
           </p>
           <Btn 
             label="Submit Another" 
             className="w-full"
             onClick={() => {
               setSubmitted(false);
-              setNewOutward(INITIAL_OUTWARD);
+              setNewTransfer(INITIAL_TRANSFER);
               setErrors({});
             }} 
           />
@@ -167,8 +175,8 @@ export const PublicOutward = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Material Outward Form</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Record materials issued from the store</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Material Transfer Outward Form</h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Record materials transferred to other locations</p>
         </div>
 
         <Card className="p-6 sm:p-8">
@@ -221,17 +229,17 @@ export const PublicOutward = () => {
               )}
             </div>
 
-            {newOutward.sku && (
+            {newTransfer.sku && (
               <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-[#E8ECF0] dark:border-gray-700 rounded-lg">
                 <p className="text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase">
                   Selected Item
                 </p>
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-[13px] font-medium text-[#1A1A2E] dark:text-white">
-                    {newOutward.name}
+                    {newTransfer.name}
                   </p>
                   <p className="text-[13px] font-bold text-[#10B981] dark:text-emerald-400">
-                    Available: {inventory.find(i => i.sku === newOutward.sku)?.liveStock} {newOutward.unit}
+                    Available: {inventory.find(i => i.sku === newTransfer.sku)?.liveStock} {newTransfer.unit}
                   </p>
                 </div>
               </div>
@@ -240,9 +248,9 @@ export const PublicOutward = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <SField
                 label="Project *"
-                value={newOutward.project}
+                value={newTransfer.project}
                 onChange={(e: any) =>
-                  setNewOutward(prev => ({ ...prev, project: e.target.value }))
+                  setNewTransfer(prev => ({ ...prev, project: e.target.value }))
                 }
                 options={PROJECTS}
                 required
@@ -250,9 +258,9 @@ export const PublicOutward = () => {
               />
               <SField
                 label="Category *"
-                value={newOutward.category}
+                value={newTransfer.category}
                 onChange={(e: any) =>
-                  setNewOutward(prev => ({ ...prev, category: e.target.value }))
+                  setNewTransfer(prev => ({ ...prev, category: e.target.value }))
                 }
                 options={CATEGORIES}
                 required
@@ -262,20 +270,20 @@ export const PublicOutward = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field
-                label="Quantity to Issue *"
+                label="Quantity to Transfer *"
                 type="number"
-                value={newOutward.qty}
+                value={newTransfer.qty}
                 onChange={(e: any) =>
-                  setNewOutward(prev => ({ ...prev, qty: e.target.value }))
+                  setNewTransfer(prev => ({ ...prev, qty: e.target.value }))
                 }
                 required
                 error={errors.qty}
               />
               <SField
                 label="Unit *"
-                value={newOutward.unit}
+                value={newTransfer.unit}
                 onChange={(e: any) =>
-                  setNewOutward(prev => ({ ...prev, unit: e.target.value }))
+                  setNewTransfer(prev => ({ ...prev, unit: e.target.value }))
                 }
                 options={UNITS}
                 required
@@ -285,37 +293,56 @@ export const PublicOutward = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field
-                label="Location *"
-                value={newOutward.location}
+                label="From Location *"
+                value={newTransfer.fromLocation}
                 onChange={(e: any) =>
-                  setNewOutward(prev => ({ ...prev, location: e.target.value }))
+                  setNewTransfer(prev => ({ ...prev, fromLocation: e.target.value }))
                 }
                 required
-                error={errors.location}
+                error={errors.fromLocation}
               />
               <Field
-                label="Handover To *"
-                value={newOutward.handoverTo}
+                label="To Location *"
+                value={newTransfer.toLocation}
                 onChange={(e: any) =>
-                  setNewOutward(prev => ({ ...prev, handoverTo: e.target.value }))
+                  setNewTransfer(prev => ({ ...prev, toLocation: e.target.value }))
+                }
+                required
+                error={errors.toLocation}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                label="Handover To *"
+                value={newTransfer.handoverTo}
+                onChange={(e: any) =>
+                  setNewTransfer(prev => ({ ...prev, handoverTo: e.target.value }))
                 }
                 required
                 error={errors.handoverTo}
+              />
+              <Field
+                label="Remarks"
+                value={newTransfer.remarks}
+                onChange={(e: any) =>
+                  setNewTransfer(prev => ({ ...prev, remarks: e.target.value }))
+                }
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ImageUpload
                 label="Material Photo"
-                id="material-photo-out-pub"
-                value={newOutward.materialPhotoUrl}
+                id="material-photo-transfer-pub"
+                value={newTransfer.materialPhotoUrl}
                 onChange={handleMaterialPhoto}
                 loading={loadingField === "material"}
               />
               <ImageUpload
                 label="Handover Photo"
-                id="handover-photo-out-pub"
-                value={newOutward.handoverPhotoUrl}
+                id="handover-photo-transfer-pub"
+                value={newTransfer.handoverPhotoUrl}
                 onChange={handleHandoverPhoto}
                 loading={loadingField === "handover"}
               />
@@ -323,7 +350,7 @@ export const PublicOutward = () => {
 
             <div className="pt-4">
               <Btn
-                label={actionLoading ? "Submitting..." : "Submit Issue Record"}
+                label={actionLoading ? "Submitting..." : "Submit Transfer Record"}
                 onClick={handleSubmit}
                 loading={actionLoading}
                 className="w-full py-3 text-lg"

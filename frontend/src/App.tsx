@@ -21,6 +21,10 @@ import { Archive } from "./pages/Archive";
 import { InwardPage } from "./pages/Inward";
 import { PublicInward } from "./pages/PublicInward";
 import { PublicOutward } from "./pages/PublicOutward";
+import { MaterialTransferOutwardPage } from "./pages/MaterialTransferOutward";
+import { PublicMaterialTransferOutward } from "./pages/PublicMaterialTransferOutward";
+import { MaterialTransferInwardPage } from "./pages/MaterialTransferInward";
+import { PublicMaterialTransferInward } from "./pages/PublicMaterialTransferInward";
 import { ROUTES } from "./routes";
 
 const AppContent = () => {
@@ -54,6 +58,12 @@ const AppContent = () => {
   }
   if (hash === "public-outward") {
     return <PublicOutward />;
+  }
+  if (hash === "public-material-transfer-outward") {
+    return <PublicMaterialTransferOutward />;
+  }
+  if (hash === "public-material-transfer-inward") {
+    return <PublicMaterialTransferInward />;
   }
 
   if (isAuthLoading) {
@@ -108,6 +118,10 @@ const AppContent = () => {
         return <InwardPage />;
       case "outward":
         return <OutwardPage />;
+      case "material-transfer-outward":
+        return <MaterialTransferOutwardPage />;
+      case "material-transfer-inward":
+        return <MaterialTransferInwardPage />;
       case "inward-returns":
         return <InwardReturns />;
       case "outward-returns":

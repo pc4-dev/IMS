@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { 
   Inventory, Catalogue, Vendor, PurchaseOrder, 
-  MaterialPlan, GRN, Inward, Outward, InwardReturn, OutwardReturn, WriteOff, User, StockCheckReport, Settings 
+  MaterialPlan, GRN, Inward, Outward, InwardReturn, OutwardReturn, WriteOff, User, StockCheckReport, Settings,
+  MaterialTransferOutward, MaterialTransferInward
 } from './models.ts';
 import { broadcast } from './broadcaster.ts';
 import { upload } from './cloudinary.ts';
@@ -16,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // Public Routes for unauthenticated data entry
 router.get('/public/inventory', async (req, res) => {
   try {
-    const items = await Inventory.find().select('sku name unit liveStock category lastProject').sort({ name: 1 }).lean();
+    const items = await Inventory.find().select('sku itemName unit liveStock category lastProject').sort({ itemName: 1 }).lean();
     res.json({ success: true, data: items });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -113,6 +114,76 @@ router.post('/public/outward', async (req, res) => {
     });
 
     res.status(201).json({ success: true, data: outward });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/public/material-transfer-outward', async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const transferData = req.body;
+    
+    // Check stock
+    const inv = await Inventory.findOne({ sku: transferData.sku });
+    if (!inv || inv.liveStock < transferData.qty) {
+      throw new Error('Insufficient stock or item not found');
+    }
+
+    const transfer = new MaterialTransferOutward(transferData);
+    await transfer.save({ session });
+
+    // Update Inventory
+    await Inventory.findOneAndUpdate(
+      { sku: transferData.sku },
+      { $inc: { liveStock: -transferData.qty } },
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-outward' });
+    broadcast({ type: 'DATA_UPDATED', path: 'inventory' });
+
+    broadcast({ 
+      type: 'NOTIFICATION', 
+      message: `New Material Transfer Outward Entry: ${transfer.id} for ${transfer.name}`,
+      severity: 'info'
+    });
+
+    res.status(201).json({ success: true, data: transfer });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/public/material-transfer-inward', async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const transferData = req.body;
+    
+    const transfer = new MaterialTransferInward(transferData);
+    await transfer.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-inward' });
+
+    broadcast({ 
+      type: 'NOTIFICATION', 
+      message: `New Material Transfer Inward Entry: ${transfer.id} for ${transfer.name}`,
+      severity: 'info'
+    });
+
+    res.status(201).json({ success: true, data: transfer });
   } catch (error: any) {
     await session.abortTransaction();
     session.endSession();
@@ -729,6 +800,8 @@ createCrudRoutes(InwardReturn, 'inward-returns');
 createCrudRoutes(OutwardReturn, 'outward-returns');
 createCrudRoutes(WriteOff, 'writeoffs');
 createCrudRoutes(StockCheckReport, 'stock-check-reports');
+createCrudRoutes(MaterialTransferOutward, 'material-transfer-outward');
+createCrudRoutes(MaterialTransferInward, 'material-transfer-inward');
 
 // Stock Check Audit endpoint
 router.post('/stock-check', protect, async (req: any, res: any) => {

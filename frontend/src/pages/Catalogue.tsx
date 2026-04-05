@@ -43,7 +43,7 @@ export const Catalogue = () => {
   const [deletingSku, setDeletingSku] = useState<string | null>(null);
   const [newEntry, setNewEntry] = useState<Partial<CatalogueEntry>>({
     sku: "",
-    name: "",
+    itemName: "",
     brand: "",
     description: "",
     category: "",
@@ -60,7 +60,7 @@ export const Catalogue = () => {
   const validateForm = (data: any) => {
     const newErrors: Record<string, string> = {};
     if (!data.sku) newErrors.sku = "SKU is required";
-    if (!data.name) newErrors.name = "Item name is required";
+    if (!data.itemName) newErrors.itemName = "Item name is required";
     if (!data.brand) newErrors.brand = "Brand is required";
     if (!data.category) newErrors.category = "Category is required";
     if (!data.uom) newErrors.uom = "UOM is required";
@@ -77,7 +77,7 @@ export const Catalogue = () => {
 
   const filtered = catalogue.filter((c) => {
     return (
-      c.name?.toLowerCase().includes(search.toLowerCase()) ||
+      c.itemName?.toLowerCase().includes(search.toLowerCase()) ||
       c.sku?.toLowerCase().includes(search.toLowerCase()) ||
       c.brand?.toLowerCase().includes(search.toLowerCase())
     );
@@ -89,7 +89,7 @@ export const Catalogue = () => {
       setNewEntry({
         ...newEntry,
         sku: item.sku,
-        name: item.name,
+        itemName: item.itemName,
         category: item.category,
         uom: item.unit,
       });
@@ -398,7 +398,7 @@ export const Catalogue = () => {
                       {selectedEntry.imageUrl ? (
                         <img
                           src={selectedEntry.imageUrl}
-                          alt={selectedEntry.name}
+                          alt={selectedEntry.itemName}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
@@ -442,7 +442,7 @@ export const Catalogue = () => {
                       </div>
                       
                       <h2 className="text-3xl font-bold text-[#1A1A2E] dark:text-white leading-tight mb-4">
-                        {selectedEntry.name}
+                        {selectedEntry.itemName}
                       </h2>
                       
                       <div className="space-y-2">
@@ -515,7 +515,7 @@ export const Catalogue = () => {
                 onChange={(e: any) => handleSelectItem(e.target.value)}
                 options={inventory
                   .filter((i) => !catalogue.find((c) => c.sku === i.sku))
-                  .map((i) => ({ value: i.sku, label: `${i.name} (${i.sku})` }))}
+                  .map((i) => ({ value: i.sku, label: `${i.itemName} (${i.sku})` }))}
                 required
                 error={errors.sku}
               />
@@ -524,10 +524,10 @@ export const Catalogue = () => {
             <div className="grid grid-cols-2 gap-4">
               <Field
                 label="Item Name"
-                value={newEntry.name}
+                value={newEntry.itemName}
                 disabled
                 required
-                error={errors.name}
+                error={errors.itemName}
               />
               <Field
                 label="SKU Code"

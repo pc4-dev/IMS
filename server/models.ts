@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 // Inventory Model
 const InventorySchema = new Schema({
   sku: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
+  itemName: { type: String, required: true },
   category: { type: String, required: true },
   subCategory: { type: String, required: true },
   unit: { type: String, required: true },
@@ -15,7 +15,7 @@ const InventorySchema = new Schema({
 }, { timestamps: true });
 
 InventorySchema.index({ sku: 1 });
-InventorySchema.index({ name: 1 });
+InventorySchema.index({ itemName: 1 });
 InventorySchema.index({ category: 1 });
 InventorySchema.index({ updatedAt: -1 });
 
@@ -253,6 +253,58 @@ OutwardSchema.index({ project: 1 });
 OutwardSchema.index({ updatedAt: -1 });
 
 export const Outward = mongoose.model('Outward', OutwardSchema);
+
+// Material Transfer Outward Model
+const MaterialTransferOutwardSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  sku: String,
+  name: String,
+  qty: Number,
+  unit: String,
+  date: String,
+  fromLocation: String,
+  toLocation: String,
+  handoverTo: String,
+  project: String,
+  category: String,
+  materialPhotoUrl: String,
+  handoverPhotoUrl: String,
+  remarks: String,
+  module: { type: String, default: "Admin" },
+}, { timestamps: true });
+
+MaterialTransferOutwardSchema.index({ id: 1 });
+MaterialTransferOutwardSchema.index({ sku: 1 });
+MaterialTransferOutwardSchema.index({ fromLocation: 1 });
+MaterialTransferOutwardSchema.index({ toLocation: 1 });
+MaterialTransferOutwardSchema.index({ updatedAt: -1 });
+
+export const MaterialTransferOutward = mongoose.model('MaterialTransferOutward', MaterialTransferOutwardSchema);
+
+// Material Transfer Inward Model
+const MaterialTransferInwardSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  sku: String,
+  name: String,
+  qty: Number,
+  unit: String,
+  date: String,
+  location: String,
+  receivedBy: String,
+  project: String,
+  category: String,
+  materialPhotoUrl: String,
+  personPhotoUrl: String,
+  remarks: String,
+  module: { type: String, default: "Admin" },
+}, { timestamps: true });
+
+MaterialTransferInwardSchema.index({ id: 1 });
+MaterialTransferInwardSchema.index({ sku: 1 });
+MaterialTransferInwardSchema.index({ location: 1 });
+MaterialTransferInwardSchema.index({ updatedAt: -1 });
+
+export const MaterialTransferInward = mongoose.model('MaterialTransferInward', MaterialTransferInwardSchema);
 
 // Inward Return Model
 const InwardReturnSchema = new Schema({

@@ -141,7 +141,7 @@ export const OutwardReturns = () => {
     setNewReturn({
       ...newReturn,
       sku: item.sku,
-      name: item.name,
+      name: item.itemName,
       unit: item.unit,
     });
     setSearchItem("");
@@ -299,7 +299,7 @@ export const OutwardReturns = () => {
                 <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-[#E8ECF0] dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {inventory
                     .filter((i) =>
-                      i.name?.toLowerCase().includes(searchItem.toLowerCase()),
+                      i.itemName?.toLowerCase().includes(searchItem.toLowerCase()),
                     )
                     .map((i) => (
                       <div
@@ -307,7 +307,7 @@ export const OutwardReturns = () => {
                         onClick={() => selectItem(i)}
                         className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-[13px] text-gray-900 dark:text-gray-300"
                       >
-                        {i.name} ({i.sku})
+                        {i.itemName} ({i.sku})
                       </div>
                     ))}
                 </div>

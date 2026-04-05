@@ -39,5 +39,13 @@ export const api = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return res.data;
+  },
+  publicUpload: async (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const res = await instance.post('public/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
   }
 };

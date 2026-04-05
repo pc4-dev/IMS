@@ -166,7 +166,7 @@ export const InwardPage = () => {
     setNewInward({
       ...newInward,
       sku: item.sku,
-      name: item.name,
+      name: item.itemName,
       unit: item.unit,
       project: item.lastProject || "",
       category: item.category || "",
@@ -498,7 +498,7 @@ export const InwardPage = () => {
                 <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-900 border border-[#E8ECF0] dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {inventory
                     .filter((i) =>
-                      i.name?.toLowerCase().includes(searchItem.toLowerCase()),
+                      i.itemName?.toLowerCase().includes(searchItem.toLowerCase()),
                     )
                     .map((i) => (
                       <div
@@ -506,7 +506,7 @@ export const InwardPage = () => {
                         onClick={() => selectItem(i)}
                         className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-[13px] flex justify-between items-center"
                       >
-                        <span className="text-gray-900 dark:text-white">{i.name} ({i.sku})</span>
+                        <span className="text-gray-900 dark:text-white">{i.itemName} ({i.sku})</span>
                         <span className="font-bold text-[#10B981] dark:text-emerald-400">
                           {i.liveStock} {i.unit}
                         </span>

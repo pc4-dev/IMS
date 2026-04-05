@@ -207,7 +207,7 @@ export const OutwardPage = () => {
     setNewOutward({
       ...newOutward,
       sku: item.sku,
-      name: item.name,
+      name: item.itemName,
       unit: item.unit,
       category: item.category,
     });
@@ -525,7 +525,7 @@ export const OutwardPage = () => {
                     {inventory
                       .filter(
                         (i) =>
-                          i.name
+                          i.itemName
                             ?.toLowerCase()
                             .includes(searchItem.toLowerCase()) &&
                           i.liveStock > 0,
@@ -537,7 +537,7 @@ export const OutwardPage = () => {
                           className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-[13px] flex justify-between"
                         >
                           <span className="text-gray-900 dark:text-white">
-                            {i.name} ({i.sku})
+                            {i.itemName} ({i.sku})
                           </span>
                           <span className="font-bold text-[#10B981] dark:text-emerald-400">
                             {i.liveStock} {i.unit}

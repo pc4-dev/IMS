@@ -12,7 +12,8 @@ import {
   Trash2, 
   CheckSquare, 
   FileText, 
-  Archive 
+  Archive,
+  ArrowRightLeft
 } from "lucide-react";
 
 export interface RouteConfig {
@@ -127,6 +128,34 @@ export const ROUTES: RouteConfig[] = [
     id: "outward",
     label: "Outward",
     icon: ArrowUpFromLine,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+      "Site Engineer",
+      "Accountant",
+    ],
+  },
+  {
+    id: "material-transfer-outward",
+    label: "Material Transfer Outward",
+    icon: ArrowRightLeft,
+    roles: [
+      "Super Admin",
+      "Director",
+      "AGM",
+      "Store Incharge",
+      "Inventory Manager",
+      "Site Engineer",
+      "Accountant",
+    ],
+  },
+  {
+    id: "material-transfer-inward",
+    label: "Material Transfer Inward",
+    icon: ArrowRightLeft,
     roles: [
       "Super Admin",
       "Director",

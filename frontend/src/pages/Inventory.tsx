@@ -45,7 +45,7 @@ const InventoryRow = memo(
         </td>
         <td className="px-4 py-3 text-[13px] font-medium text-gray-900 dark:text-white">
           <div className="flex items-center gap-2">
-            {item.name}
+            {item.itemName || cat?.name || "N/A"}
             {isLow && (
               <AlertTriangle
                 className="w-4 h-4 text-amber-500"
@@ -121,7 +121,7 @@ InventoryRow.displayName = "InventoryRow";
 
 const INITIAL_ITEM: InventoryItem = {
   sku: "",
-  name: "",
+  itemName: "",
   category: "",
   subCategory: "",
   unit: "Nos",
@@ -168,13 +168,14 @@ export const Inventory = () => {
   useEffect(() => {
     // Only show skeleton if we have no data
     const isInitialLoad = inventory.length === 0;
-    fetchResource("inventory", 1, 50, !isInitialLoad);
+    // Fetch a large number of items to show as a single list
+    fetchResource("inventory", 1, 1000, !isInitialLoad);
   }, [fetchResource]);
 
   const validateForm = (data: any) => {
     const newErrors: Record<string, string> = {};
     if (!data.sku) newErrors.sku = "SKU is required";
-    if (!data.name) newErrors.name = "Item name is required";
+    if (!data.itemName) newErrors.itemName = "Item name is required";
     if (!data.category) newErrors.category = "Category is required";
     if (!data.subCategory) newErrors.subCategory = "Sub-category is required";
     if (!data.unit) newErrors.unit = "Unit is required";
@@ -198,7 +199,7 @@ export const Inventory = () => {
     () =>
       inventory.filter(
         (i) =>
-          i.name?.toLowerCase().includes(search.toLowerCase()) ||
+          i.itemName?.toLowerCase().includes(search.toLowerCase()) ||
           i.sku?.toLowerCase().includes(search.toLowerCase()),
       ),
     [inventory, search],
@@ -222,7 +223,7 @@ export const Inventory = () => {
       if (tagData.condition === "Damaged") {
         await addWriteOff({
           sku: tagModal.sku,
-          name: tagModal.name,
+          name: tagModal.itemName,
           category: tagModal.category,
           quantity: tagData.quantity,
           unit: tagModal.unit,
@@ -446,23 +447,18 @@ export const Inventory = () => {
           </table>
         </div>
 
-        {inventoryPagination && (
-          <Pagination
-            data={inventoryPagination}
-            onPageChange={handlePageChange}
-          />
-        )}
+        {/* Pagination removed as per user request for a single list format */}
       </Card>
 
       {tagModal && (
         <Modal
-          title={`Tag Item: ${tagModal.name}`}
+          title={`Tag Item: ${tagModal.itemName}`}
           onClose={() => setTagModal(null)}
         >
           <div className="space-y-6">
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
               <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
-                Item: {tagModal.name}
+                Item: {tagModal.itemName}
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
                 SKU: {tagModal.sku}
@@ -545,7 +541,7 @@ export const Inventory = () => {
               </div>
               <div>
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Item Name</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">{viewModal.name}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{viewModal.itemName}</p>
               </div>
               <div>
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Category</p>
@@ -600,13 +596,13 @@ export const Inventory = () => {
                 />
                 <Field
                   label="Item Name"
-                  value={newItem.name}
+                  value={newItem.itemName}
                   onChange={(e: any) =>
-                    setNewItem({ ...newItem, name: e.target.value })
+                    setNewItem({ ...newItem, itemName: e.target.value })
                   }
                   placeholder="e.g. Copper Cable 10mm"
                   required
-                  error={errors.name}
+                  error={errors.itemName}
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

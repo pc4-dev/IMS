@@ -3,7 +3,7 @@ import { InventoryItem, Vendor, PurchaseOrder, CatalogueEntry } from "./types";
 export const SEED_INVENTORY: InventoryItem[] = [
   {
     sku: "Ele/Mod/0001",
-    name: "3 Module Box",
+    itemName: "3 Module Box",
     category: "Electrical",
     subCategory: "Module",
     unit: "NOS",
@@ -13,7 +13,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Con/Cem/0321",
-    name: "Cement",
+    itemName: "Cement",
     category: "Construction",
     subCategory: "Cement",
     unit: "BAG",
@@ -23,7 +23,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Pvc/Pip/0073",
-    name: "PVC Pipe 75MM",
+    itemName: "PVC Pipe 75MM",
     category: "PVC",
     subCategory: "Pipe",
     unit: "FEET",
@@ -33,7 +33,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Oil/Die/0419",
-    name: "Diesel",
+    itemName: "Diesel",
     category: "Oil",
     subCategory: "Diesel",
     unit: "LTR",
@@ -43,7 +43,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Fir/Pip/0476",
-    name: "Fire Pipe 1in",
+    itemName: "Fire Pipe 1in",
     category: "Fire",
     subCategory: "Pipe",
     unit: "FEET",
@@ -53,7 +53,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Har/Bol/0049",
-    name: "Tower Bolt 12in",
+    itemName: "Tower Bolt 12in",
     category: "Hardware",
     subCategory: "Bolt",
     unit: "NOS",
@@ -63,7 +63,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "San/Jal/0034",
-    name: "4in Plane Jali",
+    itemName: "4in Plane Jali",
     category: "Sanitary",
     subCategory: "Jali",
     unit: "NOS",
@@ -73,7 +73,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Sca/Pip/0001",
-    name: "Scaffolding Pipe 2in",
+    itemName: "Scaffolding Pipe 2in",
     category: "Scaffolding",
     subCategory: "Pipe",
     unit: "NOS",
@@ -83,7 +83,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Sca/Pip/0002",
-    name: "Scaffolding Clamp",
+    itemName: "Scaffolding Clamp",
     category: "Scaffolding",
     subCategory: "Clamp",
     unit: "NOS",
@@ -93,7 +93,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Tmp/Fen/0001",
-    name: "Boundary Fencing Panel",
+    itemName: "Boundary Fencing Panel",
     category: "Temporary",
     subCategory: "Fencing",
     unit: "NOS",
@@ -103,7 +103,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "MS/Pip/0001",
-    name: "MS Pipe 2in",
+    itemName: "MS Pipe 2in",
     category: "MS",
     subCategory: "Pipe",
     unit: "FEET",
@@ -113,7 +113,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Ele/Tmp/0001",
-    name: "Temporary Wiring Cable",
+    itemName: "Temporary Wiring Cable",
     category: "Electrical",
     subCategory: "Cable",
     unit: "MTR",
@@ -123,7 +123,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Ele/Wir/0007",
-    name: "4 SQMM Black Wire",
+    itemName: "4 SQMM Black Wire",
     category: "Electrical",
     subCategory: "Wire",
     unit: "COIL",
@@ -133,7 +133,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Con/Bri/0627",
-    name: "Kakka Bricks",
+    itemName: "Kakka Bricks",
     category: "Construction",
     subCategory: "Bricks",
     unit: "NOS",
@@ -143,7 +143,7 @@ export const SEED_INVENTORY: InventoryItem[] = [
   },
   {
     sku: "Tmp/Off/0001",
-    name: "Temp Office Partition",
+    itemName: "Temp Office Partition",
     category: "Temporary",
     subCategory: "Office",
     unit: "NOS",

@@ -14,6 +14,8 @@ import {
   StockCheckReport,
   Role,
   Notification,
+  MaterialTransferOutward,
+  MaterialTransferInward,
 } from "./types";
 import { SEED_INVENTORY, SEED_VENDORS, SEED_POS, SEED_CATALOGUE } from "./data";
 import { api } from "./services/api";
@@ -54,6 +56,10 @@ interface AppState {
   inwardsPagination: PaginationInfo | null;
   outwards: Outward[];
   outwardsPagination: PaginationInfo | null;
+  materialTransferOutwards: MaterialTransferOutward[];
+  materialTransferOutwardsPagination: PaginationInfo | null;
+  materialTransferInwards: MaterialTransferInward[];
+  materialTransferInwardsPagination: PaginationInfo | null;
   inwardReturns: InwardReturn[];
   inwardReturnsPagination: PaginationInfo | null;
   outwardReturns: OutwardReturn[];
@@ -108,6 +114,12 @@ interface AppState {
   updateOutward: (id: string, data: Partial<Outward>) => Promise<void>;
   addOutward: (data: Outward) => Promise<void>;
   deleteOutward: (id: string) => Promise<void>;
+  addMaterialTransferOutward: (data: MaterialTransferOutward) => Promise<void>;
+  deleteMaterialTransferOutward: (id: string) => Promise<void>;
+  updateMaterialTransferOutward: (id: string, data: Partial<MaterialTransferOutward>) => Promise<void>;
+  addMaterialTransferInward: (data: MaterialTransferInward) => Promise<void>;
+  deleteMaterialTransferInward: (id: string) => Promise<void>;
+  updateMaterialTransferInward: (id: string, data: Partial<MaterialTransferInward>) => Promise<void>;
   addInwardReturn: (data: InwardReturn) => Promise<void>;
   deleteInwardReturn: (id: string) => Promise<void>;
   addOutwardReturn: (data: OutwardReturn) => Promise<void>;
@@ -121,6 +133,8 @@ interface AppState {
   fetchPublicVendors: () => Promise<Vendor[]>;
   submitPublicInward: (data: any) => Promise<void>;
   submitPublicOutward: (data: any) => Promise<void>;
+  submitPublicMaterialTransferOutward: (data: any) => Promise<void>;
+  submitPublicMaterialTransferInward: (data: any) => Promise<void>;
   uploadPublicImage: (file: File) => Promise<{ url: string }>;
   stats: {
     totalSKUs: number;
@@ -166,6 +180,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [inwardsPagination, setInwardsPagination] = useState<PaginationInfo | null>(null);
   const [outwards, setOutwards] = useState<Outward[]>([]);
   const [outwardsPagination, setOutwardsPagination] = useState<PaginationInfo | null>(null);
+  const [materialTransferOutwards, setMaterialTransferOutwards] = useState<MaterialTransferOutward[]>([]);
+  const [materialTransferOutwardsPagination, setMaterialTransferOutwardsPagination] = useState<PaginationInfo | null>(null);
+  const [materialTransferInwards, setMaterialTransferInwards] = useState<MaterialTransferInward[]>([]);
+  const [materialTransferInwardsPagination, setMaterialTransferInwardsPagination] = useState<PaginationInfo | null>(null);
   const [inwardReturns, setInwardReturns] = useState<InwardReturn[]>([]);
   const [inwardReturnsPagination, setInwardReturnsPagination] = useState<PaginationInfo | null>(null);
   const [outwardReturns, setOutwardReturns] = useState<OutwardReturn[]>([]);
@@ -321,6 +339,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setOutwards(res.data);
             setOutwardsPagination(res.pagination);
             break;
+          case 'material-transfer-outward':
+            setMaterialTransferOutwards(res.data);
+            setMaterialTransferOutwardsPagination(res.pagination);
+            break;
+          case 'material-transfer-inward':
+            setMaterialTransferInwards(res.data);
+            setMaterialTransferInwardsPagination(res.pagination);
+            break;
           case 'inward-returns':
             setInwardReturns(res.data);
             setInwardReturnsPagination(res.pagination);
@@ -358,6 +384,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         fetchResource('grn', 1, 50, true),
         fetchResource('inward', 1, 50, true),
         fetchResource('outward', 1, 50, true),
+        fetchResource('material-transfer-outward', 1, 50, true),
+        fetchResource('material-transfer-inward', 1, 50, true),
         fetchResource('inward-returns', 1, 50, true),
         fetchResource('outward-returns', 1, 50, true),
         fetchResource('writeoffs', 1, 50, true),
@@ -622,6 +650,66 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setActionLoading(false);
     }
   };
+  
+  const addMaterialTransferOutward = async (data: MaterialTransferOutward) => {
+    setActionLoading(true);
+    try {
+      await api.post('material-transfer-outward', data);
+      await fetchResource('material-transfer-outward');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const deleteMaterialTransferOutward = async (id: string) => {
+    setActionLoading(true);
+    try {
+      await api.delete('material-transfer-outward', id);
+      await fetchResource('material-transfer-outward');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const updateMaterialTransferOutward = async (id: string, data: Partial<MaterialTransferOutward>) => {
+    setActionLoading(true);
+    try {
+      await api.put('material-transfer-outward', id, data);
+      await fetchResource('material-transfer-outward');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const addMaterialTransferInward = async (data: MaterialTransferInward) => {
+    setActionLoading(true);
+    try {
+      await api.post('material-transfer-inward', data);
+      await fetchResource('material-transfer-inward');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const deleteMaterialTransferInward = async (id: string) => {
+    setActionLoading(true);
+    try {
+      await api.delete('material-transfer-inward', id);
+      await fetchResource('material-transfer-inward');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const updateMaterialTransferInward = async (id: string, data: Partial<MaterialTransferInward>) => {
+    setActionLoading(true);
+    try {
+      await api.put('material-transfer-inward', id, data);
+      await fetchResource('material-transfer-inward');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const addInwardReturn = async (data: InwardReturn) => {
     setActionLoading(true);
@@ -738,15 +826,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const submitPublicMaterialTransferOutward = async (data: any) => {
+    setActionLoading(true);
+    try {
+      await api.post('public/material-transfer-outward', data);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const submitPublicMaterialTransferInward = async (data: any) => {
+    setActionLoading(true);
+    try {
+      await api.post('public/material-transfer-inward', data);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const uploadPublicImage = async (file: File) => {
-    const formData = new FormData();
-    formData.append('image', file);
-    const res = await fetch('/api/public/upload', {
-      method: 'POST',
-      body: formData,
-    });
-    if (!res.ok) throw new Error('Failed to upload image');
-    return res.json();
+    try {
+      return await api.publicUpload(file);
+    } catch (error: any) {
+      console.error('Public upload error:', error);
+      throw new Error(error.response?.data?.message || 'Failed to upload image');
+    }
   };
 
   useEffect(() => {
@@ -863,6 +967,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         inwardsPagination,
         outwards,
         outwardsPagination,
+        materialTransferOutwards,
+        materialTransferOutwardsPagination,
+        materialTransferInwards,
+        materialTransferInwardsPagination,
         inwardReturns,
         inwardReturnsPagination,
         outwardReturns,
@@ -903,6 +1011,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         updateOutward,
         addOutward,
         deleteOutward,
+        addMaterialTransferOutward,
+        deleteMaterialTransferOutward,
+        updateMaterialTransferOutward,
+        addMaterialTransferInward,
+        deleteMaterialTransferInward,
+        updateMaterialTransferInward,
         addInwardReturn,
         deleteInwardReturn,
         addOutwardReturn,
@@ -916,6 +1030,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         fetchPublicVendors,
         submitPublicInward,
         submitPublicOutward,
+        submitPublicMaterialTransferOutward,
+        submitPublicMaterialTransferInward,
         uploadPublicImage,
         stats,
         fetchStats,

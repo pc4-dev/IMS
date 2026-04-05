@@ -177,7 +177,7 @@ export const SField = ({
   </div>
 );
 
-export const Modal = ({ title, onClose, wide, children }: any) => (
+export const Modal = ({ title, onClose, wide, children, footer }: any) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -202,7 +202,12 @@ export const Modal = ({ title, onClose, wide, children }: any) => (
           <X className="w-5 h-5" />
         </button>
       </div>
-      <div className="p-4 sm:p-6 overflow-y-auto">{children}</div>
+      <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
+      {footer && (
+        <div className="px-4 sm:px-6 py-4 border-t border-[#E8ECF0] dark:border-[#334155] bg-gray-50/50 dark:bg-gray-800/50 rounded-b-2xl">
+          {footer}
+        </div>
+      )}
     </motion.div>
   </motion.div>
 );
