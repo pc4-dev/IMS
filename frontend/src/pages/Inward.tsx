@@ -38,12 +38,7 @@ export const InwardPage = () => {
     actionLoading
   } = useAppStore();
 
-  useEffect(() => {
-    // Use silent: true if we already have data to prevent "faltu loader"
-    const isInitialLoad = inwards.length === 0;
-    fetchResource('inward', 1, 50, !isInitialLoad);
-  }, [fetchResource]);
-
+  const [selectedProject, setSelectedProject] = useState<string>("");
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [selectedInward, setSelectedInward] = useState<Inward | null>(null);
@@ -53,6 +48,14 @@ export const InwardPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Use silent: true if we already have data to prevent "faltu loader"
+    const isInitialLoad = inwards.length === 0;
+    const filters: any = {};
+    if (selectedProject && selectedProject !== "All Projects") filters.project = selectedProject;
+    fetchResource('inward', 1, 50, !isInitialLoad, filters);
+  }, [fetchResource, selectedProject]);
+
   const validateForm = (data: any) => {
     const newErrors: Record<string, string> = {};
     if (!data.sku) newErrors.sku = "Item selection is required";
@@ -61,7 +64,6 @@ export const InwardPage = () => {
     if (!data.qty || data.qty <= 0) newErrors.qty = "Valid quantity is required";
     if (!data.supplier) newErrors.supplier = "Supplier is required";
     if (!data.challanNo) newErrors.challanNo = "Challan/Invoice No. is required";
-    if (!data.mrNo) newErrors.mrNo = "MR No. is required";
     if (!data.materialPhotoUrl) newErrors.materialPhotoUrl = "Material photo is required";
     if (!data.personPhotoUrl) newErrors.personPhotoUrl = "Challan/Invoice photo is required";
     
@@ -70,8 +72,10 @@ export const InwardPage = () => {
   };
 
   const handlePageChange = useCallback((page: number) => {
-    fetchResource('inward', page);
-  }, [fetchResource]);
+    const filters: any = {};
+    if (selectedProject && selectedProject !== "All Projects") filters.project = selectedProject;
+    fetchResource('inward', page, 50, false, filters);
+  }, [fetchResource, selectedProject]);
 
   const [loadingField, setLoadingField] = useState<string | null>(null);
 
@@ -183,7 +187,7 @@ export const InwardPage = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-800">
-              {[...Array(6)].map((_, i) => (
+              {[...Array(7)].map((_, i) => (
                 <th key={i} className="px-4 py-3">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 animate-pulse"></div>
                 </th>
@@ -193,7 +197,7 @@ export const InwardPage = () => {
           <tbody>
             {[...Array(8)].map((_, i) => (
               <tr key={i} className="border-b border-gray-200 dark:border-gray-800">
-                {[...Array(6)].map((_, j) => (
+                {[...Array(7)].map((_, j) => (
                   <td key={j} className="px-4 py-4">
                     <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-full animate-pulse"></div>
                   </td>
@@ -212,13 +216,25 @@ export const InwardPage = () => {
         title="Inward Transactions"
         sub="Record of all materials received"
         actions={
-          ["Super Admin", "Director", "Store Incharge"].includes(role || "") && (
-            <Btn
-              label="Manual Inward"
-              icon={Plus}
-              onClick={() => setModal(true)}
-            />
-          )
+          <div className="flex items-center gap-3">
+            <div className="w-64">
+              <SField
+                label=""
+                placeholder="Filter by Project"
+                value={selectedProject}
+                onChange={(e: any) => setSelectedProject(e.target.value)}
+                options={["All Projects", ...PROJECTS]}
+                className="mb-0"
+              />
+            </div>
+            {["Super Admin", "Director", "Store Incharge"].includes(role || "") && (
+              <Btn
+                label="Manual Inward"
+                icon={Plus}
+                onClick={() => setModal(true)}
+              />
+            )}
+          </div>
         }
       />
 
@@ -232,6 +248,9 @@ export const InwardPage = () => {
                 <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-[#E8ECF0] dark:border-gray-800">
                   <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
                     Date
+                  </th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
+                    Project
                   </th>
                   <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
                     Item
@@ -261,6 +280,9 @@ export const InwardPage = () => {
                   <tr key={inw.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-4 py-3 text-[13px] text-[#6B7280] dark:text-gray-400">
                       {inw.date}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-[#1A1A2E] dark:text-white font-medium">
+                      {inw.project}
                     </td>
                     <td className="px-4 py-3 text-[13px] text-[#1A1A2E] dark:text-white">
                       {inw.name}{" "}
@@ -589,7 +611,6 @@ export const InwardPage = () => {
                 onChange={(e: any) =>
                   setNewInward(prev => ({ ...prev, mrNo: e.target.value }))
                 }
-                required
                 error={errors.mrNo}
               />
             </div>

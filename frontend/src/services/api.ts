@@ -8,7 +8,7 @@ const instance = axios.create({
 });
 
 export const api = {
-  get: async (path: string, params?: { page?: number; limit?: number; fields?: string }) => {
+  get: async (path: string, params?: any) => {
     const res = await instance.get(path, { params });
     return res.data;
   },

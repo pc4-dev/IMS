@@ -614,20 +614,12 @@ export const OutwardPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SField
+              <Field
                 label="Location *"
                 value={newOutward.location}
                 onChange={(e: any) =>
                   setNewOutward(prev => ({ ...prev, location: e.target.value }))
                 }
-                options={[
-                  "Villa No.",
-                  "Club House",
-                  "Plant",
-                  "G+10",
-                  "Main Gate",
-                  "Other",
-                ]}
                 required
                 error={errors.location}
               />

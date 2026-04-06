@@ -120,8 +120,9 @@ export const Field = ({
   disabled,
   required,
   error,
+  className,
 }: any) => (
-  <div className="mb-4">
+  <div className={cn("mb-4", className)}>
     {label && (
       <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider mb-1.5">
         {label} {required && <span className="text-red-500">*</span>}
@@ -150,8 +151,10 @@ export const SField = ({
   disabled,
   required,
   error,
+  placeholder = "Select...",
+  className,
 }: any) => (
-  <div className="mb-4">
+  <div className={cn("mb-4", className)}>
     {label && (
       <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider mb-1.5">
         {label} {required && <span className="text-red-500">*</span>}
@@ -166,7 +169,7 @@ export const SField = ({
         error && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
       )}
     >
-      <option value="">Select...</option>
+      <option value="">{placeholder}</option>
       {options.map((opt: any) => (
         <option key={opt.value || opt} value={opt.value || opt}>
           {opt.label || opt}

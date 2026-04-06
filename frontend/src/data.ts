@@ -315,6 +315,10 @@ export const SEED_POS: PurchaseOrder[] = [
 ];
 
 export const PROJECTS = [
+  "Girwai",
+  "Regal Garden",
+  "Garden city",
+  "Neoteric Head office",
   "Garden City Villa",
   "Eden Garden",
   "Zen Garden",

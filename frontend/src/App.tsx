@@ -25,6 +25,7 @@ import { MaterialTransferOutwardPage } from "./pages/MaterialTransferOutward";
 import { PublicMaterialTransferOutward } from "./pages/PublicMaterialTransferOutward";
 import { MaterialTransferInwardPage } from "./pages/MaterialTransferInward";
 import { PublicMaterialTransferInward } from "./pages/PublicMaterialTransferInward";
+import { PublicPurchaseOrder } from "./pages/PublicPurchaseOrder";
 import { ROUTES } from "./routes";
 
 const AppContent = () => {
@@ -64,6 +65,9 @@ const AppContent = () => {
   }
   if (hash === "public-material-transfer-inward") {
     return <PublicMaterialTransferInward />;
+  }
+  if (hash === "public-pos") {
+    return <PublicPurchaseOrder />;
   }
 
   if (isAuthLoading) {

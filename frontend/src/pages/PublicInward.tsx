@@ -63,7 +63,6 @@ export const PublicInward = () => {
     if (!data.qty || data.qty <= 0) newErrors.qty = "Valid quantity is required";
     if (!data.supplier) newErrors.supplier = "Supplier is required";
     if (!data.challanNo) newErrors.challanNo = "Challan/Invoice No. is required";
-    if (!data.mrNo) newErrors.mrNo = "MR No. is required";
     if (!data.materialPhotoUrl) newErrors.materialPhotoUrl = "Material photo is required";
     if (!data.personPhotoUrl) newErrors.personPhotoUrl = "Challan/Invoice photo is required";
     
@@ -298,7 +297,6 @@ export const PublicInward = () => {
                 onChange={(e: any) =>
                   setNewInward(prev => ({ ...prev, mrNo: e.target.value }))
                 }
-                required
                 error={errors.mrNo}
               />
             </div>

@@ -14,15 +14,16 @@ import {
 } from "../components/ui";
 import {
   Plus,
-  Search,
-  AlertTriangle,
-  X,
   FileText,
+  Search,
+  Trash2,
+  Package,
+  Building2,
+  AlertCircle,
   Eye,
   Edit2,
-  Trash2,
 } from "lucide-react";
-import { PurchaseOrder, POLineItem } from "../types";
+import { PurchaseOrder, POLineItem, CatalogueEntry, Vendor } from "../types";
 import { fmtCur, genId, todayStr } from "../utils";
 import { PROJECTS } from "../data";
 import toast from "react-hot-toast";
@@ -40,6 +41,7 @@ export const PurchaseOrders = () => {
     role, 
     inventory, 
     vendors, 
+    catalogue,
     settings,
     loading,
     actionLoading
@@ -50,32 +52,9 @@ export const PurchaseOrders = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [searchItem, setSearchItem] = useState("");
+  const [poSearchTerm, setPoSearchTerm] = useState("");
   const canEdit = ["Super Admin", "Director", "Project Manager"].includes(role || "");
-
-  const validateForm = (data: any) => {
-    const newErrors: Record<string, string> = {};
-    if (!data.project) newErrors.project = "Project is required";
-    if (!data.phase) newErrors.phase = "Phase/Block is required";
-    if (!data.milestone) newErrors.milestone = "Milestone is required";
-    if (!data.vendor) newErrors.vendor = "Vendor is required";
-    if (!data.items || data.items.length === 0) newErrors.items = "At least one item is required";
-    
-    const hasReusable = data.items?.some((i: any) => {
-      const inv = inventory.find((inv) => inv.sku === i.sku);
-      return (
-        inv &&
-        ["Good", "Needs Repair"].includes(inv.condition) &&
-        inv.liveStock > 0
-      );
-    });
-
-    if (hasReusable && !data.justification) {
-      newErrors.justification = "Justification is required for ordering items with reusable stock available";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   useEffect(() => {
     // Only show skeleton if we have no data
@@ -102,27 +81,116 @@ export const PurchaseOrders = () => {
   };
 
   const [newPO, setNewPO] = useState<Partial<PurchaseOrder>>(initialPO);
-  const [searchItem, setSearchItem] = useState("");
 
-  const handleCreate = async () => {
-    if (!validateForm(newPO)) {
-      toast.error("Please fix the errors in the form");
+  const validateForm = () => {
+    const newErrors: any = {};
+    if (!newPO.project) newErrors.project = "Project is required";
+    if (!newPO.phase) newErrors.phase = "Phase is required";
+    if (!newPO.milestone) newErrors.milestone = "Milestone is required";
+    if (!newPO.vendor) newErrors.vendor = "Vendor is required";
+    if (!newPO.items || newPO.items.length === 0) newErrors.items = "Add at least one item";
+
+    // Reusable stock check
+    const hasReusable = newPO.items?.some((i: any) => {
+      const inv = inventory.find((inv) => inv.sku === i.sku);
+      return (
+        inv &&
+        ["Good", "Needs Repair"].includes(inv.condition) &&
+        inv.liveStock > 0
+      );
+    });
+
+    if (hasReusable && !newPO.justification) {
+      newErrors.justification = "Justification is required for ordering items with reusable stock available";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const addItem = (item: CatalogueEntry) => {
+    const existing = newPO.items?.find((i) => i.sku === item.sku);
+    if (existing) {
+      toast.error("Item already added");
       return;
     }
 
-    const totalValue =
-      newPO.items?.reduce((sum, item) => sum + item.totalWithGST, 0) || 0;
+    const inv = inventory.find((i) => i.sku === item.sku);
+    const newItem: POLineItem = {
+      sku: item.sku,
+      name: item.name,
+      qty: 1,
+      unit: item.uom || (inv ? inv.unit : ''),
+      rate: 0,
+      gstPct: 18,
+      total: 0,
+      totalWithGST: 0,
+      category: item.category || (inv ? inv.category : ''),
+      currentStock: inv ? inv.liveStock : 0,
+      requirementQty: 1,
+    };
+
+    setNewPO({
+      ...newPO,
+      items: [...(newPO.items || []), newItem],
+    });
+    setSearchItem("");
+  };
+
+  const updateItem = (sku: string, field: keyof POLineItem, value: any) => {
+    const updatedItems = newPO.items?.map((item) => {
+      if (item.sku === sku) {
+        const updated = { ...item, [field]: value };
+        updated.total = updated.qty * updated.rate;
+        updated.totalWithGST = updated.total * (1 + updated.gstPct / 100);
+        return updated;
+      }
+      return item;
+    });
+    setNewPO({ ...newPO, items: updatedItems });
+  };
+
+  const removeItem = (sku: string) => {
+    setNewPO({
+      ...newPO,
+      items: newPO.items?.filter((i) => i.sku !== sku),
+    });
+  };
+
+  const calculateTotal = () => {
+    return newPO.items?.reduce((sum, item) => sum + item.totalWithGST, 0) || 0;
+  };
+
+  const handleFormSubmit = async () => {
+    if (!validateForm()) return;
+
+    const totalValue = calculateTotal();
     const isAutoApproved = totalValue <= settings.poThreshold;
+
+    const poData: PurchaseOrder = {
+      id: newPO.id || `PO-${Date.now().toString().slice(-6)}`,
+      project: newPO.project!,
+      phase: newPO.phase || "N/A",
+      workType: newPO.workType || "N/A",
+      milestone: newPO.milestone || "N/A",
+      vendor: newPO.vendor!,
+      items: newPO.items as POLineItem[],
+      totalValue: totalValue,
+      status: isAutoApproved ? "Approved" : "Pending L1",
+      approvalL1: isAutoApproved ? "Approved" : "Pending",
+      approvalL2: isAutoApproved ? "Approved" : "Pending",
+      justification: newPO.justification,
+      createdBy: role!,
+      date: newPO.date || todayStr(),
+      priority: newPO.priority as any,
+      applicatedArea: newPO.applicatedArea,
+      requirementBy: newPO.requirementBy,
+      location: newPO.location,
+    };
 
     if (isEditing && newPO.id) {
       try {
-        await updatePO(newPO.id, {
-          ...newPO,
-          totalValue,
-          status: isAutoApproved ? "Approved" : "Pending L1",
-          approvalL1: isAutoApproved ? "Approved" : "Pending",
-          approvalL2: isAutoApproved ? "Approved" : "Pending",
-        });
+        await updatePO(newPO.id, poData);
         toast.success("Purchase Order updated successfully");
         setModal(false);
         setNewPO(initialPO);
@@ -141,37 +209,21 @@ export const PurchaseOrders = () => {
       return num > max ? num : max;
     }, 0);
 
-    const po: PurchaseOrder = {
+    const finalPO: PurchaseOrder = {
+      ...poData,
       id: genId("PO", maxIdNum),
-      project: newPO.project!,
-      phase: newPO.phase!,
-      workType: newPO.workType!,
-      milestone: newPO.milestone!,
-      vendor: newPO.vendor!,
-      items: newPO.items!,
-      totalValue,
-      status: isAutoApproved ? "Approved" : "Pending L1",
-      approvalL1: isAutoApproved ? "Approved" : "Pending",
-      approvalL2: isAutoApproved ? "Approved" : "Pending",
-      justification: newPO.justification,
-      createdBy: role!,
-      date: todayStr(),
-      priority: newPO.priority || "Normal",
-      applicatedArea: newPO.applicatedArea,
-      requirementBy: newPO.requirementBy,
-      location: newPO.location,
     };
 
-      try {
-        await addPO(po);
-        toast.success("Purchase Order created successfully");
-        setModal(false);
-        setNewPO(initialPO);
-        setErrors({});
-      } catch (error: any) {
-        toast.error(`Failed to create PO: ${error.message}`);
-      }
-    };
+    try {
+      await addPO(finalPO);
+      toast.success("Purchase Order created successfully");
+      setModal(false);
+      setNewPO(initialPO);
+      setErrors({});
+    } catch (error: any) {
+      toast.error(`Failed to create PO: ${error.message}`);
+    }
+  };
 
   const confirmDelete = async () => {
     if (!deleteConfirm) return;
@@ -289,48 +341,6 @@ export const PurchaseOrders = () => {
     doc.save(`PO_${po.id}.pdf`);
   };
 
-  const addItem = (invItem: any) => {
-    const item: POLineItem = {
-      sku: invItem.sku,
-      name: invItem.itemName,
-      qty: 1,
-      unit: invItem.unit,
-      rate: 0,
-      gstPct: 18,
-      total: 0,
-      totalWithGST: 0,
-      currentStock: invItem.liveStock,
-      category: invItem.category,
-      requirementQty: 1,
-    };
-    setNewPO({ ...newPO, items: [...(newPO.items || []), item] });
-    setSearchItem("");
-  };
-
-  const updateItem = (index: number, field: string, value: number) => {
-    const items = [...(newPO.items || [])];
-    const item = { ...items[index], [field]: value };
-    item.total = item.qty * item.rate;
-    item.totalWithGST = item.total * (1 + item.gstPct / 100);
-    items[index] = item;
-    setNewPO({ ...newPO, items });
-  };
-
-  const removeItem = (index: number) => {
-    const items = [...(newPO.items || [])];
-    items.splice(index, 1);
-    setNewPO({ ...newPO, items });
-  };
-
-  const hasReusable = newPO.items?.some((i) => {
-    const inv = inventory.find((inv) => inv.sku === i.sku);
-    return (
-      inv &&
-      ["Good", "Needs Repair"].includes(inv.condition) &&
-      inv.liveStock > 0
-    );
-  });
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -350,6 +360,17 @@ export const PurchaseOrders = () => {
           )
         }
       />
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search by ID, Project, Vendor, or Status..."
+          className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+          value={poSearchTerm}
+          onChange={(e) => setPoSearchTerm(e.target.value)}
+        />
+      </div>
 
       <Card className="p-0 overflow-hidden border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="overflow-x-auto">
@@ -396,7 +417,15 @@ export const PurchaseOrders = () => {
                     <td className="px-4 py-4 text-right"><Skeleton className="h-8 w-24 ml-auto" /></td>
                   </tr>
                 ))
-              ) : pos.length === 0 ? (
+              ) : pos.filter(po => {
+                const term = poSearchTerm.toLowerCase();
+                return (
+                  po.id.toLowerCase().includes(term) ||
+                  po.project.toLowerCase().includes(term) ||
+                  po.vendor.toLowerCase().includes(term) ||
+                  po.status.toLowerCase().includes(term)
+                );
+              }).length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-2 text-gray-400">
@@ -406,7 +435,15 @@ export const PurchaseOrders = () => {
                   </td>
                 </tr>
               ) : (
-                pos.map((po) => (
+                pos.filter(po => {
+                  const term = poSearchTerm.toLowerCase();
+                  return (
+                    po.id.toLowerCase().includes(term) ||
+                    po.project.toLowerCase().includes(term) ||
+                    po.vendor.toLowerCase().includes(term) ||
+                    po.status.toLowerCase().includes(term)
+                  );
+                }).map((po) => (
                   <tr key={po.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-4 py-3 text-[13px] font-medium text-gray-900 dark:text-white">
                       {po.id}
@@ -564,215 +601,203 @@ export const PurchaseOrders = () => {
             setErrors({});
           }}
         >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="space-y-8 p-2">
+            {/* Top Grid Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               <SField
-                label="Project"
+                label="PROJECT"
                 value={newPO.project}
-                onChange={(e: any) =>
-                  setNewPO({ ...newPO, project: e.target.value })
-                }
+                onChange={(e: any) => setNewPO({ ...newPO, project: e.target.value })}
                 options={PROJECTS}
+                placeholder="Choose Project"
                 required
                 error={errors.project}
               />
               <Field
-                label="Phase/Block"
+                label="PHASE/BLOCK"
                 value={newPO.phase}
-                onChange={(e: any) =>
-                  setNewPO({ ...newPO, phase: e.target.value })
-                }
+                onChange={(e: any) => setNewPO({ ...newPO, phase: e.target.value })}
+                placeholder="Enter Phase/Block"
                 required
                 error={errors.phase}
               />
               <Field
-                label="Milestone"
+                label="MILESTONE"
                 value={newPO.milestone}
-                onChange={(e: any) =>
-                  setNewPO({ ...newPO, milestone: e.target.value })
-                }
+                onChange={(e: any) => setNewPO({ ...newPO, milestone: e.target.value })}
+                placeholder="Enter Milestone"
                 required
                 error={errors.milestone}
               />
               <SField
-                label="Vendor"
+                label="VENDOR"
                 value={newPO.vendor}
-                onChange={(e: any) =>
-                  setNewPO({ ...newPO, vendor: e.target.value })
-                }
-                options={vendors.map((v) => v.name)}
+                onChange={(e: any) => setNewPO({ ...newPO, vendor: e.target.value })}
+                options={vendors.map(v => v.name)}
+                placeholder="Choose Vendor"
                 required
                 error={errors.vendor}
               />
               <Field
-                label="Location"
+                label="LOCATION"
                 value={newPO.location}
-                onChange={(e: any) =>
-                  setNewPO({ ...newPO, location: e.target.value })
-                }
-                error={errors.location}
+                onChange={(e: any) => setNewPO({ ...newPO, location: e.target.value })}
+                placeholder="Enter Location"
               />
               <Field
-                label="Requirement By"
+                label="REQUIREMENT BY"
                 value={newPO.requirementBy}
-                onChange={(e: any) =>
-                  setNewPO({ ...newPO, requirementBy: e.target.value })
-                }
-                error={errors.requirementBy}
+                onChange={(e: any) => setNewPO({ ...newPO, requirementBy: e.target.value })}
+                placeholder="Enter Name"
               />
               <Field
-                label="Applicated Area"
+                label="APPLICATED AREA"
                 value={newPO.applicatedArea}
-                onChange={(e: any) =>
-                  setNewPO({ ...newPO, applicatedArea: e.target.value })
-                }
-                error={errors.applicatedArea}
+                onChange={(e: any) => setNewPO({ ...newPO, applicatedArea: e.target.value })}
+                placeholder="Enter Area"
               />
               <SField
-                label="Priority"
+                label="PRIORITY"
                 value={newPO.priority}
-                onChange={(e: any) =>
-                  setNewPO({ ...newPO, priority: e.target.value })
-                }
-                options={["Urgent", "Normal", "Low"]}
-                error={errors.priority}
+                onChange={(e: any) => setNewPO({ ...newPO, priority: e.target.value })}
+                options={["Normal", "Urgent", "Low"]}
               />
             </div>
 
-          <div className="mb-6">
-            <h3 className="text-[13px] font-bold text-gray-900 dark:text-white mb-3">
-              Line Items
-            </h3>
-
-            {errors.items && (
-              <p className="text-[11px] text-red-500 mb-2">{errors.items}</p>
-            )}
-
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search inventory to add items..."
-                value={searchItem}
-                onChange={(e) => setSearchItem(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-[13px] focus:outline-none focus:border-orange-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-              />
-              {searchItem && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {inventory
-                    .filter((i) =>
-                      i.itemName?.toLowerCase().includes(searchItem.toLowerCase()),
-                    )
-                    .map((i) => (
-                      <div
-                        key={i.sku}
-                        onClick={() => addItem(i)}
-                        className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-[13px] text-gray-900 dark:text-white"
-                      >
-                        {i.itemName} ({i.sku}) - Stock: {i.liveStock}
-                      </div>
-                    ))}
+            {/* Line Items Section */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Line Items</h3>
+              
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Search inventory to add items..."
+                    value={searchItem}
+                    onChange={(e) => setSearchItem(e.target.value)}
+                  />
                 </div>
-              )}
-            </div>
+                {searchItem && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                    {[
+                      ...catalogue.map(c => ({ ...c, source: 'catalogue' })),
+                      ...inventory.map(i => ({ 
+                        sku: i.sku, 
+                        name: i.itemName, 
+                        category: i.category, 
+                        uom: i.unit,
+                        source: 'inventory' 
+                      }))
+                    ]
+                      .filter((item, index, self) => 
+                        self.findIndex(t => t.sku === item.sku) === index
+                      )
+                      .filter(item => 
+                        item.name.toLowerCase().includes(searchItem.toLowerCase()) ||
+                        item.sku.toLowerCase().includes(searchItem.toLowerCase())
+                      )
+                      .map(item => (
+                        <button
+                          key={item.sku}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 text-sm border-b border-gray-100 dark:border-gray-800 last:border-0"
+                          onClick={() => addItem({
+                            sku: item.sku,
+                            name: item.name,
+                            category: item.category,
+                            uom: (item as any).uom || (item as any).unit || '',
+                            brand: (item as any).brand || '',
+                            description: (item as any).description || '',
+                            location: (item as any).location || '',
+                            minStock: (item as any).minStock || 0,
+                            imageUrl: (item as any).imageUrl || '',
+                            status: 'Approved'
+                          })}
+                        >
+                          <div className="font-bold text-[#1A1A2E] dark:text-white">{item.name}</div>
+                          <div className="text-xs text-gray-500 font-mono">{item.sku} • {item.category} • {(item as any).uom || (item as any).unit}</div>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
 
-            {newPO.items && newPO.items.length > 0 && (
+              {/* Items Table */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse mb-4">
+                <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase min-w-[150px]">
-                        Item
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase w-20">
-                        Stock
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase w-20">
-                        Unit
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase w-20">
-                        Req Qty
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase w-20">
-                        Order Qty
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase w-24">
-                        Rate
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase w-20">
-                        GST %
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase text-right">
-                        Total
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase w-10"></th>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
+                      <th className="px-3 py-2">Item</th>
+                      <th className="px-3 py-2 text-center">Stock</th>
+                      <th className="px-3 py-2 text-center">Unit</th>
+                      <th className="px-3 py-2 text-center">Req Qty</th>
+                      <th className="px-3 py-2 text-center">Order Qty</th>
+                      <th className="px-3 py-2 text-center">Rate</th>
+                      <th className="px-3 py-2 text-center">GST %</th>
+                      <th className="px-3 py-2 text-right">Total</th>
+                      <th className="px-3 py-2 w-10"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {newPO.items.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="px-2 py-2">
-                          <p className="text-[13px] font-medium text-gray-900 dark:text-white">{item.name}</p>
-                          <p className="text-[11px] text-gray-400 font-mono">{item.sku}</p>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {newPO.items?.map((item) => (
+                      <tr key={item.sku} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                        <td className="px-3 py-3">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{item.name}</p>
+                          <p className="text-[10px] text-gray-500 font-mono mt-0.5">{item.sku}</p>
                         </td>
-                        <td className="px-2 py-2 text-[13px] font-medium text-gray-500 dark:text-gray-400">
-                          {item.currentStock ?? 0}
+                        <td className="px-3 py-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">
+                          {item.currentStock}
                         </td>
-                        <td className="px-2 py-2 text-[13px] text-gray-500 dark:text-gray-400">
+                        <td className="px-3 py-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">
                           {item.unit}
                         </td>
-                        <td className="px-2 py-2">
+                        <td className="px-3 py-3 text-center">
                           <input
                             type="number"
-                            value={item.requirementQty ?? 0}
-                            onChange={(e) =>
-                              updateItem(idx, "requirementQty", Number(e.target.value))
-                            }
-                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-800 rounded text-[13px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                            className="w-16 px-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-sm text-center focus:ring-1 focus:ring-orange-500 outline-none"
+                            value={item.requirementQty}
+                            onChange={(e) => updateItem(item.sku, 'requirementQty', Number(e.target.value))}
                           />
                         </td>
-                        <td className="px-2 py-2">
+                        <td className="px-3 py-3 text-center">
                           <input
                             type="number"
-                            value={item.qty ?? 0}
-                            onChange={(e) =>
-                              updateItem(idx, "qty", Number(e.target.value))
-                            }
-                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-800 rounded text-[13px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                            className="w-16 px-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-sm text-center focus:ring-1 focus:ring-orange-500 outline-none"
+                            value={item.qty}
+                            onChange={(e) => updateItem(item.sku, 'qty', Number(e.target.value))}
                           />
                         </td>
-                        <td className="px-2 py-2">
+                        <td className="px-3 py-3 text-center">
                           <input
                             type="number"
-                            value={item.rate ?? 0}
-                            onChange={(e) =>
-                              updateItem(idx, "rate", Number(e.target.value))
-                            }
-                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-800 rounded text-[13px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                            className="w-24 px-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-sm text-center focus:ring-1 focus:ring-orange-500 outline-none"
+                            value={item.rate}
+                            onChange={(e) => updateItem(item.sku, 'rate', Number(e.target.value))}
                           />
                         </td>
-                        <td className="px-2 py-2">
+                        <td className="px-3 py-3 text-center">
                           <select
+                            className="px-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-sm focus:ring-1 focus:ring-orange-500 outline-none"
                             value={item.gstPct}
-                            onChange={(e) =>
-                              updateItem(idx, "gstPct", Number(e.target.value))
-                            }
-                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-800 rounded text-[13px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                            onChange={(e) => updateItem(item.sku, 'gstPct', Number(e.target.value))}
                           >
+                            <option value={0}>0%</option>
                             <option value={5}>5%</option>
                             <option value={12}>12%</option>
                             <option value={18}>18%</option>
                             <option value={28}>28%</option>
                           </select>
                         </td>
-                        <td className="px-2 py-2 text-[13px] font-bold text-right text-gray-900 dark:text-white">
-                          {fmtCur(item.totalWithGST)}
+                        <td className="px-3 py-3 text-right text-sm font-bold text-gray-900 dark:text-white">
+                          ₹{item.totalWithGST.toLocaleString()}
                         </td>
-                        <td className="px-2 py-2 text-right">
-                          <button
-                            onClick={() => removeItem(idx)}
-                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        <td className="px-3 py-3 text-center">
+                          <button 
+                            onClick={() => removeItem(item.sku)} 
+                            className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors"
                           >
-                            <X className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>
@@ -780,47 +805,34 @@ export const PurchaseOrders = () => {
                   </tbody>
                 </table>
               </div>
-            )}
+            </div>
 
-            {hasReusable && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg mb-4">
-                <div className="flex items-start gap-2 text-blue-800 dark:text-blue-400">
-                  <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <div>
-                    <p className="text-[13px] font-bold">
-                      Reusable Stock Available
-                    </p>
-                    <p className="text-[13px] mt-1">
-                      Some items in this PO have reusable stock available.
-                      Please provide justification for ordering new stock.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <Field
-                    label="Justification"
-                    value={newPO.justification}
-                    onChange={(e: any) =>
-                      setNewPO({ ...newPO, justification: e.target.value })
-                    }
-                    required
-                    error={errors.justification}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+            {/* Justification - keeping it but making it less prominent if it's not in screenshot */}
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">Justification</label>
+              <textarea
+                className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border ${errors.justification ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-h-[80px]`}
+                value={newPO.justification}
+                onChange={(e) => setNewPO({ ...newPO, justification: e.target.value })}
+                placeholder="Why is this needed?"
+              />
+              {errors.justification && <p className="text-[10px] text-red-500 font-bold">{errors.justification}</p>}
+            </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-800">
-            <Btn label="Cancel" outline onClick={() => {
-              setModal(false);
-              setErrors({});
-            }} />
-            <Btn
-              label={isEditing ? "Update PO" : "Create PO"}
-              onClick={handleCreate}
-              loading={actionLoading}
-            />
+            {/* Footer Buttons */}
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-800">
+              <Btn 
+                label="Cancel" 
+                outline
+                onClick={() => setModal(false)} 
+              />
+              <Btn 
+                label={isEditing ? "Update PO" : "Create PO"} 
+                className="bg-[#F97316] hover:bg-[#EA580C] text-white border-none px-8" 
+                onClick={handleFormSubmit} 
+                loading={actionLoading}
+              />
+            </div>
           </div>
         </Modal>
       )}

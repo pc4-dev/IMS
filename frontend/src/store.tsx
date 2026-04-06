@@ -90,7 +90,7 @@ interface AppState {
   actionLoading: boolean;
   setActionLoading: React.Dispatch<React.SetStateAction<boolean>>;
   refreshData: () => Promise<void>;
-  fetchResource: (resource: string, page?: number, limit?: number, silent?: boolean) => Promise<void>;
+  fetchResource: (resource: string, page?: number, limit?: number, silent?: boolean, filters?: any) => Promise<void>;
   updateInventory: (sku: string, data: Partial<InventoryItem>) => Promise<void>;
   addInventory: (data: InventoryItem) => Promise<void>;
   deleteInventory: (sku: string) => Promise<void>;
@@ -131,6 +131,8 @@ interface AppState {
   uploadImage: (file: File) => Promise<{ url: string }>;
   fetchPublicInventory: () => Promise<InventoryItem[]>;
   fetchPublicVendors: () => Promise<Vendor[]>;
+  fetchPublicCatalogue: () => Promise<CatalogueEntry[]>;
+  submitPublicPO: (data: any) => Promise<void>;
   submitPublicInward: (data: any) => Promise<void>;
   submitPublicOutward: (data: any) => Promise<void>;
   submitPublicMaterialTransferOutward: (data: any) => Promise<void>;
@@ -298,10 +300,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const fetchResource = useCallback(async (resource: string, page = 1, limit = 50, silent = false) => {
+  const fetchResource = useCallback(async (resource: string, page = 1, limit = 50, silent = false, filters = {}) => {
     if (!silent) setLoading(true);
     try {
-      const res = await api.get(resource, { page, limit });
+      const res = await api.get(resource, { page, limit, ...filters });
       if (res.success) {
         switch (resource) {
           case 'inventory':
@@ -808,6 +810,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return res.data;
   };
 
+  const fetchPublicCatalogue = async () => {
+    const res = await api.get('public/catalogue');
+    return res.data;
+  };
+
+  const submitPublicPO = async (data: any) => {
+    setActionLoading(true);
+    try {
+      await api.post('public/po', data);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const submitPublicInward = async (data: any) => {
     setActionLoading(true);
     try {
@@ -1028,6 +1044,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         uploadImage,
         fetchPublicInventory,
         fetchPublicVendors,
+        fetchPublicCatalogue,
+        submitPublicPO,
         submitPublicInward,
         submitPublicOutward,
         submitPublicMaterialTransferOutward,

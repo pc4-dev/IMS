@@ -33,6 +33,15 @@ router.get('/public/vendors', async (req, res) => {
   }
 });
 
+router.get('/public/catalogue', async (req, res) => {
+  try {
+    const items = await Catalogue.find({ status: 'Approved' }).select('sku name uom category brand').sort({ name: 1 }).lean();
+    res.json({ success: true, data: items });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.post('/public/upload', upload.single('image'), (req, res) => {
   try {
     if (!req.file) {
@@ -41,6 +50,31 @@ router.post('/public/upload', upload.single('image'), (req, res) => {
     res.json({ url: (req.file as any).path });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/public/po', async (req, res) => {
+  try {
+    const poData = req.body;
+    const po = new PurchaseOrder({
+      ...poData,
+      status: 'Pending L1',
+      createdBy: 'Public Portal',
+      date: new Date().toISOString().split('T')[0]
+    });
+    await po.save();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'pos' });
+    
+    broadcast({ 
+      type: 'NOTIFICATION', 
+      message: `New Public Purchase Order: ${po.id} for ${po.project}`,
+      severity: 'info'
+    });
+
+    res.status(201).json({ success: true, data: po });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
@@ -306,16 +340,31 @@ const createCrudRoutes = (model: any, path: string) => {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
       const skip = (page - 1) * limit;
-      const fields = (req.query.fields as string) || '';
+      const fields = (req.query.fields as string) || "";
 
-      const items = await model.find()
+      // Extract filters from query params (exclude pagination and fields)
+      const queryParams = { ...req.query };
+      delete queryParams.page;
+      delete queryParams.limit;
+      delete queryParams.fields;
+
+      // Handle regex search if 'search' is provided (optional, but good for future)
+      const filter: any = {};
+      Object.keys(queryParams).forEach((key) => {
+        if (queryParams[key]) {
+          filter[key] = queryParams[key];
+        }
+      });
+
+      const items = await model
+        .find(filter)
         .select(fields)
         .sort({ updatedAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
 
-      const total = await model.countDocuments();
+      const total = await model.countDocuments(filter);
 
       res.json({
         success: true,
@@ -324,8 +373,8 @@ const createCrudRoutes = (model: any, path: string) => {
           total,
           page,
           limit,
-          pages: Math.ceil(total / limit)
-        }
+          pages: Math.ceil(total / limit),
+        },
       });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
