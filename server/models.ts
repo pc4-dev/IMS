@@ -42,8 +42,8 @@ CatalogueSchema.index({ updatedAt: -1 });
 
 export const Catalogue = mongoose.model('Catalogue', CatalogueSchema);
 
-// Vendor Model
-const VendorSchema = new Schema({
+// Supplier Model
+const SupplierSchema = new Schema({
   id: { type: String, required: true, unique: true },
   
   // Basic Info
@@ -92,12 +92,12 @@ const VendorSchema = new Schema({
   gst: { type: String }, // Map to gstNumber
 }, { timestamps: true });
 
-VendorSchema.index({ id: 1 });
-VendorSchema.index({ companyName: 1 });
-VendorSchema.index({ email: 1 });
-VendorSchema.index({ updatedAt: -1 });
+SupplierSchema.index({ id: 1 });
+SupplierSchema.index({ companyName: 1 });
+SupplierSchema.index({ email: 1 });
+SupplierSchema.index({ updatedAt: -1 });
 
-export const Vendor = mongoose.model('Vendor', VendorSchema);
+export const Supplier = mongoose.model('Supplier', SupplierSchema);
 
 // Purchase Order Model
 const POLineItemSchema = new Schema({
@@ -120,7 +120,7 @@ const POSchema = new Schema({
   phase: String,
   workType: String,
   milestone: String,
-  vendor: String,
+  supplier: String,
   items: [POLineItemSchema],
   totalValue: Number,
   status: { type: String, enum: ["Approved", "Pending", "Pending L1", "Pending L2", "Pending Account", "Fulfilled", "Blocked", "Draft"], default: "Draft" },
@@ -137,7 +137,7 @@ const POSchema = new Schema({
 
 POSchema.index({ id: 1 });
 POSchema.index({ project: 1 });
-POSchema.index({ vendor: 1 });
+POSchema.index({ supplier: 1 });
 POSchema.index({ status: 1 });
 POSchema.index({ updatedAt: -1 });
 
@@ -187,7 +187,7 @@ const GRNSchema = new Schema({
   id: { type: String, required: true, unique: true },
   poId: String,
   project: String,
-  vendor: String,
+  supplier: String,
   date: String,
   challan: String,
   mrNo: String,
@@ -255,19 +255,22 @@ OutwardSchema.index({ updatedAt: -1 });
 export const Outward = mongoose.model('Outward', OutwardSchema);
 
 // Material Transfer Outward Model
-const MaterialTransferOutwardSchema = new Schema({
-  id: { type: String, required: true, unique: true },
+const MaterialTransferItemSchema = new Schema({
   sku: String,
   name: String,
   qty: Number,
   unit: String,
+  category: String,
+  materialPhotoUrl: String,
+});
+
+const MaterialTransferOutwardSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  items: [MaterialTransferItemSchema],
   date: String,
   fromLocation: String,
   toLocation: String,
   handoverTo: String,
-  project: String,
-  category: String,
-  materialPhotoUrl: String,
   handoverPhotoUrl: String,
   remarks: String,
   module: { type: String, default: "Admin" },
@@ -284,17 +287,11 @@ export const MaterialTransferOutward = mongoose.model('MaterialTransferOutward',
 // Material Transfer Inward Model
 const MaterialTransferInwardSchema = new Schema({
   id: { type: String, required: true, unique: true },
-  sku: String,
-  name: String,
-  qty: Number,
-  unit: String,
+  items: [MaterialTransferItemSchema],
   date: String,
   location: String,
   receivedBy: String,
-  project: String,
-  category: String,
-  materialPhotoUrl: String,
-  personPhotoUrl: String,
+  handoverPhotoUrl: String,
   remarks: String,
   module: { type: String, default: "Admin" },
 }, { timestamps: true });
@@ -315,7 +312,7 @@ const InwardReturnSchema = new Schema({
   unit: { type: String, required: true },
   date: { type: String, required: true },
   condition: { type: String, enum: ["New", "Good", "Needs Repair", "Damaged"], default: "Good" },
-  vendor: { type: String, required: true },
+  supplier: { type: String, required: true },
   remarks: String,
   handoverTo: String,
 }, { timestamps: true });
@@ -383,7 +380,7 @@ const UserSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ["Super Admin", "Director", "AGM", "Project Manager", "Store Incharge", "Inventory Manager", "Site Engineer", "Vendor", "Accountant"], default: "Site Engineer" },
+  role: { type: String, enum: ["Super Admin", "Director", "AGM", "Project Manager", "Store Incharge", "Inventory Manager", "Site Engineer", "Supplier", "Accountant"], default: "Site Engineer" },
   status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
 }, { timestamps: true });
 

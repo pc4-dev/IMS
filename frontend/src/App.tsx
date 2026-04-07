@@ -8,7 +8,7 @@ import { Inventory } from "./pages/Inventory";
 import { PurchaseOrders } from "./pages/PurchaseOrders";
 import { MaterialPlanning } from "./pages/MaterialPlanning";
 import { GRNPage } from "./pages/GRN";
-import { Vendors } from "./pages/Vendors";
+import { Suppliers } from "./pages/Suppliers";
 import { Catalogue } from "./pages/Catalogue";
 import { SuperAdmin } from "./pages/SuperAdmin";
 import { OutwardPage } from "./pages/Outward";
@@ -26,6 +26,7 @@ import { PublicMaterialTransferOutward } from "./pages/PublicMaterialTransferOut
 import { MaterialTransferInwardPage } from "./pages/MaterialTransferInward";
 import { PublicMaterialTransferInward } from "./pages/PublicMaterialTransferInward";
 import { PublicPurchaseOrder } from "./pages/PublicPurchaseOrder";
+import { PublicSuppliers } from "./pages/PublicSuppliers";
 import { ROUTES } from "./routes";
 
 const AppContent = () => {
@@ -69,6 +70,9 @@ const AppContent = () => {
   if (hash === "public-pos") {
     return <PublicPurchaseOrder />;
   }
+  if (hash === "public-suppliers") {
+    return <PublicSuppliers />;
+  }
 
   if (isAuthLoading) {
     return (
@@ -108,8 +112,8 @@ const AppContent = () => {
         return <SuperAdmin />;
       case "catalogue":
         return <Catalogue />;
-      case "vendors":
-        return <Vendors />;
+      case "suppliers":
+        return <Suppliers />;
       case "inventory":
         return <Inventory />;
       case "planning":

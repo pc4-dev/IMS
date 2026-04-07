@@ -32,7 +32,7 @@ export interface CatalogueEntry {
   status: "Draft" | "Approved";
 }
 
-export interface Vendor {
+export interface Supplier {
   id: string;
   // Basic Info
   email: string;
@@ -100,7 +100,7 @@ export interface PurchaseOrder {
   phase: string;
   workType: string;
   milestone: string;
-  vendor: string;
+  supplier: string;
   items: POLineItem[];
   totalValue: number;
   status: "Approved" | "Pending L1" | "Pending L2" | "Pending Account" | "Fulfilled" | "Blocked" | "Draft";
@@ -150,7 +150,7 @@ export interface GRN {
   id: string;
   poId: string;
   project: string;
-  vendor: string;
+  supplier: string;
   date: string;
   challan: string;
   mrNo: string;
@@ -200,39 +200,36 @@ export interface Outward {
   handoverPhotoUrl?: string;
 }
 
-export interface MaterialTransferOutward {
-  id: string;
+export interface MaterialTransferItem {
   sku: string;
   name: string;
   qty: number;
   unit: string;
+  materialPhotoUrl?: string;
+  category?: string;
+}
+
+export interface MaterialTransferOutward {
+  id: string;
   date: string;
   fromLocation: string;
   toLocation: string;
   handoverTo: string;
-  project?: string;
-  category?: string;
-  materialPhotoUrl?: string;
   handoverPhotoUrl?: string;
   remarks?: string;
   module?: string;
+  items: MaterialTransferItem[];
 }
 
 export interface MaterialTransferInward {
   id: string;
-  sku: string;
-  name: string;
-  qty: number;
-  unit: string;
   date: string;
   location: string;
   receivedBy: string;
-  project?: string;
-  category?: string;
-  materialPhotoUrl?: string;
-  personPhotoUrl?: string;
+  handoverPhotoUrl?: string;
   remarks?: string;
   module?: string;
+  items: MaterialTransferItem[];
 }
 
 export interface InwardReturn {
@@ -243,7 +240,7 @@ export interface InwardReturn {
   unit: string;
   date: string;
   condition: "New" | "Good" | "Needs Repair" | "Damaged";
-  vendor: string;
+  supplier: string;
   remarks?: string;
   handoverTo?: string;
   materialPhotoUrl?: string;

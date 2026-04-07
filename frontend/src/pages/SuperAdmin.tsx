@@ -171,7 +171,7 @@ export const SuperAdmin = () => {
               }
             />
             <Field
-              label="Min Vendor Quotes (Low Value)"
+              label="Min Supplier Quotes (Low Value)"
               type="number"
               value={settings.minQuotesLow}
               onChange={(e: any) =>
@@ -182,7 +182,7 @@ export const SuperAdmin = () => {
               }
             />
             <Field
-              label="Min Vendor Quotes (High Value)"
+              label="Min Supplier Quotes (High Value)"
               type="number"
               value={settings.minQuotesHigh}
               onChange={(e: any) =>

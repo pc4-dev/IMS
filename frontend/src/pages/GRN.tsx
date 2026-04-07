@@ -100,7 +100,7 @@ export const GRNPage = () => {
       ...newGRN,
       poId,
       project: po.project,
-      vendor: po.vendor,
+      supplier: po.supplier,
       items,
     });
   };
@@ -166,7 +166,7 @@ export const GRNPage = () => {
       id: grnId,
       poId: newGRN.poId!,
       project: newGRN.project!,
-      vendor: newGRN.vendor!,
+      supplier: newGRN.supplier!,
       date: todayStr(),
       challan: newGRN.challan!,
       mrNo: newGRN.mrNo!,
@@ -238,7 +238,7 @@ export const GRNPage = () => {
                   PO Ref
                 </th>
                 <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
-                  Vendor
+                  Supplier
                 </th>
                 <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
                   Variance
@@ -378,8 +378,8 @@ export const GRNPage = () => {
                 <p className="text-[13px] font-bold text-gray-900 dark:text-white">{selectedGRN.date}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Vendor</p>
-                <p className="text-[13px] font-bold text-gray-900 dark:text-white">{selectedGRN.vendor}</p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Supplier</p>
+                <p className="text-[13px] font-bold text-gray-900 dark:text-white">{selectedGRN.supplier}</p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Project</p>

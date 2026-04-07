@@ -10,7 +10,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useAppStore } from "../store";
-import { PurchaseOrder, POLineItem, CatalogueEntry, Vendor } from "../types";
+import { PurchaseOrder, POLineItem, CatalogueEntry, Supplier } from "../types";
 import { Card, Btn, Field, SField } from "../components/ui";
 import { todayStr, fmtCur } from "../utils";
 import { PROJECTS } from "../data";
@@ -21,7 +21,7 @@ export const PublicPurchaseOrder = () => {
     submitPublicPO,
     fetchPublicCatalogue,
     fetchPublicInventory,
-    fetchPublicVendors,
+    fetchPublicSuppliers,
     actionLoading 
   } = useAppStore();
 
@@ -29,7 +29,7 @@ export const PublicPurchaseOrder = () => {
   const [loading, setLoading] = useState(true);
   const [catalogue, setCatalogue] = useState<CatalogueEntry[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [searchItem, setSearchItem] = useState("");
   const [errors, setErrors] = useState<any>({});
   
@@ -38,7 +38,7 @@ export const PublicPurchaseOrder = () => {
     phase: "",
     workType: "",
     milestone: "",
-    vendor: "",
+    supplier: "",
     items: [],
     justification: "",
     priority: "Normal",
@@ -50,14 +50,14 @@ export const PublicPurchaseOrder = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [catData, invData, venData] = await Promise.all([
+        const [catData, invData, supData] = await Promise.all([
           fetchPublicCatalogue(),
           fetchPublicInventory(),
-          fetchPublicVendors()
+          fetchPublicSuppliers()
         ]);
         setCatalogue(catData || []);
         setInventory(invData || []);
-        setVendors(venData || []);
+        setSuppliers(supData || []);
       } catch (error) {
         toast.error("Failed to load form data");
       } finally {
@@ -72,7 +72,7 @@ export const PublicPurchaseOrder = () => {
     if (!newPO.project) newErrors.project = "Required";
     if (!newPO.phase) newErrors.phase = "Required";
     if (!newPO.milestone) newErrors.milestone = "Required";
-    if (!newPO.vendor) newErrors.vendor = "Required";
+    if (!newPO.supplier) newErrors.supplier = "Required";
     if (!newPO.items || newPO.items.length === 0) newErrors.items = "Add at least one item";
 
     setErrors(newErrors);
@@ -141,7 +141,7 @@ export const PublicPurchaseOrder = () => {
       phase: newPO.phase || "N/A",
       workType: newPO.workType || "N/A",
       milestone: newPO.milestone || "N/A",
-      vendor: newPO.vendor!,
+      supplier: newPO.supplier!,
       items: newPO.items as POLineItem[],
       totalValue: calculateTotal(),
       status: "Pending L1",
@@ -188,7 +188,7 @@ export const PublicPurchaseOrder = () => {
                 phase: "",
                 workType: "",
                 milestone: "",
-                vendor: "",
+                supplier: "",
                 items: [],
                 justification: "",
                 priority: "Normal",
@@ -254,13 +254,13 @@ export const PublicPurchaseOrder = () => {
                 error={errors.milestone}
               />
               <SField
-                label="VENDOR"
-                value={newPO.vendor}
-                onChange={(e: any) => setNewPO({ ...newPO, vendor: e.target.value })}
-                options={vendors.map(v => v.name)}
-                placeholder="Choose Vendor"
+                label="SUPPLIER"
+                value={newPO.supplier}
+                onChange={(e: any) => setNewPO({ ...newPO, supplier: e.target.value })}
+                options={suppliers.map(v => v.name)}
+                placeholder="Choose Supplier"
                 required
-                error={errors.vendor}
+                error={errors.supplier}
               />
               <Field
                 label="LOCATION"

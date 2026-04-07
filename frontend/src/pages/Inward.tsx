@@ -31,7 +31,7 @@ export const InwardPage = () => {
     deleteInward,
     inventory, 
     updateInventory, 
-    vendors, 
+    suppliers, 
     role, 
     uploadImage,
     loading,
@@ -590,7 +590,7 @@ export const InwardPage = () => {
                 onChange={(e: any) =>
                   setNewInward(prev => ({ ...prev, supplier: e.target.value }))
                 }
-                options={vendors.map((v) => v.name)}
+                options={suppliers.map((s) => s.companyName)}
                 required
                 error={errors.supplier}
               />

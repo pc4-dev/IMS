@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
 import {
   InventoryItem,
-  Vendor,
+  Supplier,
   PurchaseOrder,
   CatalogueEntry,
   MaterialPlan,
@@ -17,7 +17,7 @@ import {
   MaterialTransferOutward,
   MaterialTransferInward,
 } from "./types";
-import { SEED_INVENTORY, SEED_VENDORS, SEED_POS, SEED_CATALOGUE } from "./data";
+import { SEED_INVENTORY, SEED_SUPPLIERS, SEED_POS, SEED_CATALOGUE } from "./data";
 import { api } from "./services/api";
 
 import { toast } from "react-hot-toast";
@@ -44,8 +44,8 @@ interface AppState {
   inventoryPagination: PaginationInfo | null;
   catalogue: CatalogueEntry[];
   cataloguePagination: PaginationInfo | null;
-  vendors: Vendor[];
-  vendorsPagination: PaginationInfo | null;
+  suppliers: Supplier[];
+  suppliersPagination: PaginationInfo | null;
   pos: PurchaseOrder[];
   posPagination: PaginationInfo | null;
   plans: MaterialPlan[];
@@ -97,9 +97,9 @@ interface AppState {
   updateCatalogue: (sku: string, data: Partial<CatalogueEntry>) => Promise<void>;
   addCatalogue: (data: CatalogueEntry) => Promise<void>;
   deleteCatalogue: (sku: string) => Promise<void>;
-  updateVendor: (id: string, data: Partial<Vendor>) => Promise<void>;
-  addVendor: (data: Vendor) => Promise<void>;
-  deleteVendor: (id: string) => Promise<void>;
+  updateSupplier: (id: string, data: Partial<Supplier>) => Promise<void>;
+  addSupplier: (data: Supplier) => Promise<void>;
+  deleteSupplier: (id: string) => Promise<void>;
   updatePO: (id: string, data: Partial<PurchaseOrder>) => Promise<void>;
   addPO: (data: PurchaseOrder) => Promise<void>;
   deletePO: (id: string) => Promise<void>;
@@ -130,9 +130,10 @@ interface AppState {
   submitStockCheck: (report: Partial<StockCheckReport>) => Promise<void>;
   uploadImage: (file: File) => Promise<{ url: string }>;
   fetchPublicInventory: () => Promise<InventoryItem[]>;
-  fetchPublicVendors: () => Promise<Vendor[]>;
+  fetchPublicSuppliers: () => Promise<Supplier[]>;
   fetchPublicCatalogue: () => Promise<CatalogueEntry[]>;
   submitPublicPO: (data: any) => Promise<void>;
+  submitPublicSupplier: (data: any) => Promise<void>;
   submitPublicInward: (data: any) => Promise<void>;
   submitPublicOutward: (data: any) => Promise<void>;
   submitPublicMaterialTransferOutward: (data: any) => Promise<void>;
@@ -170,8 +171,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [inventoryPagination, setInventoryPagination] = useState<PaginationInfo | null>(null);
   const [catalogue, setCatalogue] = useState<CatalogueEntry[]>([]);
   const [cataloguePagination, setCataloguePagination] = useState<PaginationInfo | null>(null);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [vendorsPagination, setVendorsPagination] = useState<PaginationInfo | null>(null);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [suppliersPagination, setSuppliersPagination] = useState<PaginationInfo | null>(null);
   const [pos, setPos] = useState<PurchaseOrder[]>([]);
   const [posPagination, setPosPagination] = useState<PaginationInfo | null>(null);
   const [plans, setPlans] = useState<MaterialPlan[]>([]);
@@ -314,9 +315,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setCatalogue(res.data);
             setCataloguePagination(res.pagination);
             break;
-          case 'vendors':
-            setVendors(res.data);
-            setVendorsPagination(res.pagination);
+          case 'suppliers':
+            setSuppliers(res.data);
+            setSuppliersPagination(res.pagination);
             break;
           case 'pos':
             setPos(res.data);
@@ -380,7 +381,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       await Promise.all([
         fetchResource('inventory', 1, 50, true),
         fetchResource('catalogue', 1, 50, true),
-        fetchResource('vendors', 1, 50, true),
+        fetchResource('suppliers', 1, 50, true),
         fetchResource('pos', 1, 50, true),
         fetchResource('planning', 1, 50, true),
         fetchResource('grn', 1, 50, true),
@@ -402,7 +403,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         await api.seed({
           SEED_INVENTORY,
           SEED_CATALOGUE,
-          SEED_VENDORS,
+          SEED_SUPPLIERS,
           SEED_POS
         });
         await refreshData();
@@ -483,31 +484,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updateVendor = async (id: string, data: Partial<Vendor>) => {
+  const updateSupplier = async (id: string, data: Partial<Supplier>) => {
     setActionLoading(true);
     try {
-      const updated = await api.put('vendors', id, data);
-      setVendors(prev => prev.map(item => item.id === id ? { ...item, ...updated } : item));
+      const updated = await api.put('suppliers', id, data);
+      setSuppliers(prev => prev.map(item => item.id === id ? { ...item, ...updated } : item));
     } finally {
       setActionLoading(false);
     }
   };
 
-  const addVendor = async (data: Vendor) => {
+  const addSupplier = async (data: Supplier) => {
     setActionLoading(true);
     try {
-      await api.post('vendors', data);
-      await fetchResource('vendors');
+      await api.post('suppliers', data);
+      await fetchResource('suppliers');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const deleteVendor = async (id: string) => {
+  const deleteSupplier = async (id: string) => {
     setActionLoading(true);
     try {
-      await api.delete('vendors', id);
-      await fetchResource('vendors');
+      await api.delete('suppliers', id);
+      await fetchResource('suppliers');
     } finally {
       setActionLoading(false);
     }
@@ -797,7 +798,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const uploadImage = async (file: File) => {
-    return await api.upload(file);
+    try {
+      return await api.upload(file);
+    } catch (error: any) {
+      console.error('Admin upload error:', error);
+      throw new Error(error.response?.data?.message || 'Failed to upload image');
+    }
   };
 
   const fetchPublicInventory = async () => {
@@ -805,8 +811,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return res.data;
   };
 
-  const fetchPublicVendors = async () => {
-    const res = await api.get('public/vendors');
+  const fetchPublicSuppliers = async () => {
+    const res = await api.get('public/suppliers');
     return res.data;
   };
 
@@ -819,6 +825,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setActionLoading(true);
     try {
       await api.post('public/po', data);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const submitPublicSupplier = async (data: any) => {
+    setActionLoading(true);
+    try {
+      await api.post('public/suppliers', data);
     } finally {
       setActionLoading(false);
     }
@@ -971,8 +986,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         inventoryPagination,
         catalogue,
         cataloguePagination,
-        vendors,
-        vendorsPagination,
+        suppliers,
+        suppliersPagination,
         pos,
         posPagination,
         plans,
@@ -1010,9 +1025,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         updateCatalogue,
         addCatalogue,
         deleteCatalogue,
-        updateVendor,
-        addVendor,
-        deleteVendor,
+        updateSupplier,
+        addSupplier,
+        deleteSupplier,
         updatePO,
         addPO,
         deletePO,
@@ -1043,9 +1058,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         submitStockCheck,
         uploadImage,
         fetchPublicInventory,
-        fetchPublicVendors,
+        fetchPublicSuppliers,
         fetchPublicCatalogue,
         submitPublicPO,
+        submitPublicSupplier,
         submitPublicInward,
         submitPublicOutward,
         submitPublicMaterialTransferOutward,

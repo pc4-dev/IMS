@@ -23,7 +23,7 @@ import {
   Eye,
   Edit2,
 } from "lucide-react";
-import { PurchaseOrder, POLineItem, CatalogueEntry, Vendor } from "../types";
+import { PurchaseOrder, POLineItem, CatalogueEntry, Supplier } from "../types";
 import { fmtCur, genId, todayStr } from "../utils";
 import { PROJECTS } from "../data";
 import toast from "react-hot-toast";
@@ -40,7 +40,7 @@ export const PurchaseOrders = () => {
     deletePO, 
     role, 
     inventory, 
-    vendors, 
+    suppliers, 
     catalogue,
     settings,
     loading,
@@ -71,7 +71,7 @@ export const PurchaseOrders = () => {
     phase: "",
     workType: "",
     milestone: "",
-    vendor: "",
+    supplier: "",
     items: [],
     justification: "",
     priority: "Normal",
@@ -87,7 +87,7 @@ export const PurchaseOrders = () => {
     if (!newPO.project) newErrors.project = "Project is required";
     if (!newPO.phase) newErrors.phase = "Phase is required";
     if (!newPO.milestone) newErrors.milestone = "Milestone is required";
-    if (!newPO.vendor) newErrors.vendor = "Vendor is required";
+    if (!newPO.supplier) newErrors.supplier = "Supplier is required";
     if (!newPO.items || newPO.items.length === 0) newErrors.items = "Add at least one item";
 
     // Reusable stock check
@@ -173,7 +173,7 @@ export const PurchaseOrders = () => {
       phase: newPO.phase || "N/A",
       workType: newPO.workType || "N/A",
       milestone: newPO.milestone || "N/A",
-      vendor: newPO.vendor!,
+      supplier: newPO.supplier!,
       items: newPO.items as POLineItem[],
       totalValue: totalValue,
       status: isAutoApproved ? "Approved" : "Pending L1",
@@ -303,7 +303,7 @@ export const PurchaseOrders = () => {
     doc.text(`PO Number: ${po.id}`, 14, 55);
     doc.text(`Date: ${po.date}`, 14, 61);
     doc.text(`Project: ${po.project}`, 14, 67);
-    doc.text(`Vendor: ${po.vendor}`, 14, 73);
+    doc.text(`Supplier: ${po.supplier}`, 14, 73);
     doc.text(`Status: ${po.status}`, 14, 79);
     
     // Table
@@ -365,7 +365,7 @@ export const PurchaseOrders = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Search by ID, Project, Vendor, or Status..."
+          placeholder="Search by ID, Project, Supplier, or Status..."
           className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
           value={poSearchTerm}
           onChange={(e) => setPoSearchTerm(e.target.value)}
@@ -390,7 +390,7 @@ export const PurchaseOrders = () => {
                   Project
                 </th>
                 <th className="px-4 py-3 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Vendor
+                  Supplier
                 </th>
                 <th className="px-4 py-3 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">
                   Value
@@ -422,7 +422,7 @@ export const PurchaseOrders = () => {
                 return (
                   po.id.toLowerCase().includes(term) ||
                   po.project.toLowerCase().includes(term) ||
-                  po.vendor.toLowerCase().includes(term) ||
+                  po.supplier.toLowerCase().includes(term) ||
                   po.status.toLowerCase().includes(term)
                 );
               }).length === 0 ? (
@@ -460,7 +460,7 @@ export const PurchaseOrders = () => {
                       {po.project}
                     </td>
                     <td className="px-4 py-3 text-[13px] text-gray-500 dark:text-gray-400">
-                      {po.vendor}
+                      {po.supplier}
                     </td>
                     <td className="px-4 py-3 text-[13px] font-bold text-right text-gray-900 dark:text-white">
                       {fmtCur(po.totalValue)}
@@ -630,13 +630,13 @@ export const PurchaseOrders = () => {
                 error={errors.milestone}
               />
               <SField
-                label="VENDOR"
-                value={newPO.vendor}
-                onChange={(e: any) => setNewPO({ ...newPO, vendor: e.target.value })}
-                options={vendors.map(v => v.name)}
-                placeholder="Choose Vendor"
+                label="SUPPLIER"
+                value={newPO.supplier}
+                onChange={(e: any) => setNewPO({ ...newPO, supplier: e.target.value })}
+                options={suppliers.map(v => v.name)}
+                placeholder="Choose Supplier"
                 required
-                error={errors.vendor}
+                error={errors.supplier}
               />
               <Field
                 label="LOCATION"
@@ -872,8 +872,8 @@ export const PurchaseOrders = () => {
 
             {/* Info Grid Row 1 */}
             <div className="grid grid-cols-12 border-b border-gray-300 dark:border-gray-700">
-              <div className="col-span-2 bg-gray-100 dark:bg-gray-800 p-2 border-r border-gray-300 dark:border-gray-700 font-bold flex items-center">Vendor</div>
-              <div className="col-span-4 p-2 border-r border-gray-300 dark:border-gray-700 flex items-center font-bold text-gray-900 dark:text-white uppercase">{selectedPO.vendor}</div>
+              <div className="col-span-2 bg-gray-100 dark:bg-gray-800 p-2 border-r border-gray-300 dark:border-gray-700 font-bold flex items-center">Supplier</div>
+              <div className="col-span-4 p-2 border-r border-gray-300 dark:border-gray-700 flex items-center font-bold text-gray-900 dark:text-white uppercase">{selectedPO.supplier}</div>
               <div className="col-span-2 bg-gray-100 dark:bg-gray-800 p-2 border-r border-gray-300 dark:border-gray-700 font-bold flex items-center">Location</div>
               <div className="col-span-2 p-2 border-r border-gray-300 dark:border-gray-700 flex items-center font-medium">{selectedPO.location || "N/A"}</div>
               <div className="col-span-1 bg-gray-100 dark:bg-gray-800 p-2 border-r border-gray-300 dark:border-gray-700 font-bold flex items-center justify-center text-center leading-tight text-[9px]">Order Date</div>

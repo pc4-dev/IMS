@@ -365,20 +365,24 @@ export const ImageUpload = ({
   required,
   loading,
   id,
+  small,
 }: {
-  label: string;
+  label?: string;
   value?: string;
   onChange: (file: File) => void;
   error?: string;
   required?: boolean;
   loading?: boolean;
   id: string;
+  small?: boolean;
 }) => {
   return (
-    <div className="space-y-2">
-      <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
+    <div className={cn("space-y-2", small ? "space-y-0" : "space-y-2")}>
+      {label && !small && (
+        <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+      )}
       <div className="relative">
         <input
           type="file"
@@ -391,7 +395,8 @@ export const ImageUpload = ({
         <label
           htmlFor={id}
           className={cn(
-            "flex flex-col items-center justify-center gap-2 w-full aspect-[16/9] border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 overflow-hidden relative group",
+            "flex flex-col items-center justify-center gap-2 w-full border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 overflow-hidden relative group",
+            small ? "aspect-square w-12 h-12 rounded-lg gap-0" : "aspect-[16/9]",
             value 
               ? "border-green-200 dark:border-green-900/30 bg-green-50/30 dark:bg-green-900/10" 
               : error 
@@ -400,30 +405,29 @@ export const ImageUpload = ({
           )}
         >
           {loading ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-6 h-6 animate-spin text-[#F97316]" />
-              <span className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Uploading...</span>
+            <div className="flex flex-col items-center gap-1">
+              <Loader2 className={cn("animate-spin text-[#F97316]", small ? "w-3 h-3" : "w-6 h-6")} />
+              {!small && <span className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Uploading...</span>}
             </div>
           ) : value ? (
             <>
               <img src={value} alt={label} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="flex flex-col items-center gap-1 text-white">
-                  <Camera className="w-6 h-6" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Change Photo</span>
-                </div>
+                <Camera className={cn("text-white", small ? "w-3 h-3" : "w-6 h-6")} />
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center gap-2">
-              <Camera className={cn("w-8 h-8", error ? "text-red-400" : "text-[#6B7280] dark:text-[#475569]")} />
-              <span className={cn("text-[11px] font-bold uppercase tracking-wider", error ? "text-red-500" : "text-[#6B7280] dark:text-[#94A3B8]")}>
-                Upload
-              </span>
+            <div className="flex flex-col items-center gap-1">
+              <Camera className={cn(error ? "text-red-400" : "text-[#6B7280] dark:text-[#475569]", small ? "w-3 h-3" : "w-8 h-8")} />
+              {!small && (
+                <span className={cn("text-[11px] font-bold uppercase tracking-wider", error ? "text-red-500" : "text-[#6B7280] dark:text-[#94A3B8]")}>
+                  Upload
+                </span>
+              )}
             </div>
           )}
         </label>
-        {error && <p className="text-[11px] text-red-500 mt-1.5 font-medium">{error}</p>}
+        {error && !small && <p className="text-[11px] text-red-500 mt-1.5 font-medium">{error}</p>}
       </div>
     </div>
   );

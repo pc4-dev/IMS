@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { 
-  Inventory, Catalogue, Vendor, PurchaseOrder, 
+  Inventory, Catalogue, Supplier, PurchaseOrder, 
   MaterialPlan, GRN, Inward, Outward, InwardReturn, OutwardReturn, WriteOff, User, StockCheckReport, Settings,
   MaterialTransferOutward, MaterialTransferInward
 } from './models.ts';
@@ -24,10 +24,10 @@ router.get('/public/inventory', async (req, res) => {
   }
 });
 
-router.get('/public/vendors', async (req, res) => {
+router.get('/public/suppliers', async (req, res) => {
   try {
-    const vendors = await Vendor.find().select('name').sort({ name: 1 }).lean();
-    res.json({ success: true, data: vendors });
+    const suppliers = await Supplier.find().select('companyName').sort({ companyName: 1 }).lean();
+    res.json({ success: true, data: suppliers.map(s => ({ name: s.companyName })) });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -155,27 +155,73 @@ router.post('/public/outward', async (req, res) => {
   }
 });
 
+router.post('/public/suppliers', async (req, res) => {
+  try {
+    const supplierData = req.body;
+    
+    // Check for duplicates
+    const existingEmail = await Supplier.findOne({ email: supplierData.email });
+    if (existingEmail) {
+      return res.status(400).json({ success: false, message: 'A supplier with this email already exists.' });
+    }
+    
+    const existingMobile = await Supplier.findOne({ mobile: supplierData.mobile });
+    if (existingMobile) {
+      return res.status(400).json({ success: false, message: 'A supplier with this mobile number already exists.' });
+    }
+
+    // Generate unique ID
+    const count = await Supplier.countDocuments();
+    const supplierId = `S${String(count + 1).padStart(3, '0')}`;
+
+    const supplier = new Supplier({
+      ...supplierData,
+      id: supplierId,
+      status: 'Active', // Default status for public registration
+      createdAt: new Date().toISOString()
+    });
+    
+    await supplier.save();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'suppliers' });
+    
+    broadcast({ 
+      type: 'NOTIFICATION', 
+      message: `New Supplier Registration: ${supplier.companyName} (${supplier.id})`,
+      severity: 'info'
+    });
+
+    res.status(201).json({ success: true, data: supplier });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 router.post('/public/material-transfer-outward', async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
     const transferData = req.body;
     
-    // Check stock
-    const inv = await Inventory.findOne({ sku: transferData.sku });
-    if (!inv || inv.liveStock < transferData.qty) {
-      throw new Error('Insufficient stock or item not found');
+    // Check stock for all items
+    for (const item of transferData.items) {
+      const inv = await Inventory.findOne({ sku: item.sku });
+      if (!inv || inv.liveStock < item.qty) {
+        throw new Error(`Insufficient stock or item not found: ${item.name || item.sku}`);
+      }
     }
 
     const transfer = new MaterialTransferOutward(transferData);
     await transfer.save({ session });
 
-    // Update Inventory
-    await Inventory.findOneAndUpdate(
-      { sku: transferData.sku },
-      { $inc: { liveStock: -transferData.qty } },
-      { session }
-    );
+    // Update Inventory for all items
+    for (const item of transferData.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: -item.qty } },
+        { session }
+      );
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -185,7 +231,7 @@ router.post('/public/material-transfer-outward', async (req, res) => {
 
     broadcast({ 
       type: 'NOTIFICATION', 
-      message: `New Material Transfer Outward Entry: ${transfer.id} for ${transfer.name}`,
+      message: `New Public Material Transfer Outward: ${transfer.id}`,
       severity: 'info'
     });
 
@@ -206,14 +252,24 @@ router.post('/public/material-transfer-inward', async (req, res) => {
     const transfer = new MaterialTransferInward(transferData);
     await transfer.save({ session });
 
+    // Update Inventory for all items
+    for (const item of transferData.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: item.qty } },
+        { session }
+      );
+    }
+
     await session.commitTransaction();
     session.endSession();
 
     broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-inward' });
+    broadcast({ type: 'DATA_UPDATED', path: 'inventory' });
 
     broadcast({ 
       type: 'NOTIFICATION', 
-      message: `New Material Transfer Inward Entry: ${transfer.id} for ${transfer.name}`,
+      message: `New Public Material Transfer Inward: ${transfer.id}`,
       severity: 'info'
     });
 
@@ -578,7 +634,7 @@ router.post('/grn', protect, async (req: any, res: any) => {
         date: grn.date,
         challanNo: grn.challan,
         mrNo: grn.mrNo,
-        supplier: grn.vendor,
+        supplier: grn.supplier,
         type: "GRN",
         grnRef: grn.id,
         project: grn.project,
@@ -704,7 +760,7 @@ router.put('/grn/:id(*)', protect, async (req: any, res: any) => {
           date: grnData.date,
           challanNo: grnData.challan,
           mrNo: grnData.mrNo,
-          supplier: grnData.vendor,
+          supplier: grnData.supplier,
           type: "GRN",
           grnRef: id,
           materialPhotoUrl: grnData.materialImageUrl,
@@ -837,9 +893,277 @@ router.delete('/grn/:id(*)', protect, async (req: any, res: any) => {
   }
 });
 
+// Material Transfer Outward (Admin)
+router.post('/material-transfer-outward', protect, async (req: any, res: any) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const transferData = req.body;
+    
+    // Check stock for all items
+    for (const item of transferData.items) {
+      const inv = await Inventory.findOne({ sku: item.sku });
+      if (!inv || inv.liveStock < item.qty) {
+        throw new Error(`Insufficient stock or item not found: ${item.name || item.sku}`);
+      }
+    }
+
+    const transfer = new MaterialTransferOutward(transferData);
+    await transfer.save({ session });
+
+    // Update Inventory for all items
+    for (const item of transferData.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: -item.qty } },
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-outward' });
+    broadcast({ type: 'DATA_UPDATED', path: 'inventory' });
+
+    broadcast({ 
+      type: 'NOTIFICATION', 
+      message: `New Material Transfer Outward: ${transfer.id}`,
+      severity: 'info',
+      senderId: (req as any).user?._id
+    });
+
+    res.status(201).json({ success: true, data: transfer });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/material-transfer-outward/:id', protect, async (req: any, res: any) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { id } = req.params;
+    const transfer = await MaterialTransferOutward.findOne({ id });
+    if (!transfer) {
+      return res.status(404).json({ success: false, message: 'Transfer not found' });
+    }
+
+    // Restore stock
+    for (const item of transfer.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: item.qty } },
+        { session }
+      );
+    }
+
+    await MaterialTransferOutward.deleteOne({ id }, { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-outward' });
+    broadcast({ type: 'DATA_UPDATED', path: 'inventory' });
+
+    res.json({ success: true, message: 'Transfer deleted and stock restored' });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/material-transfer-outward/:id', protect, async (req: any, res: any) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { id } = req.params;
+    const newData = req.body;
+    const oldTransfer = await MaterialTransferOutward.findOne({ id });
+    
+    if (!oldTransfer) {
+      return res.status(404).json({ success: false, message: 'Transfer not found' });
+    }
+
+    // 1. Restore old stock
+    for (const item of oldTransfer.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: item.qty } },
+        { session }
+      );
+    }
+
+    // 2. Check if new stock is sufficient
+    for (const item of newData.items) {
+      const inv = await Inventory.findOne({ sku: item.sku }).session(session);
+      if (!inv || inv.liveStock < item.qty) {
+        throw new Error(`Insufficient stock for ${item.name || item.sku} after restoring old stock`);
+      }
+    }
+
+    // 3. Update transfer
+    const updatedTransfer = await MaterialTransferOutward.findOneAndUpdate(
+      { id },
+      newData,
+      { new: true, session }
+    );
+
+    // 4. Deduct new stock
+    for (const item of newData.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: -item.qty } },
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-outward' });
+    broadcast({ type: 'DATA_UPDATED', path: 'inventory' });
+
+    res.json({ success: true, data: updatedTransfer });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// Material Transfer Inward (Admin)
+router.post('/material-transfer-inward', protect, async (req: any, res: any) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const transferData = req.body;
+    
+    const transfer = new MaterialTransferInward(transferData);
+    await transfer.save({ session });
+
+    // Update Inventory for all items
+    for (const item of transferData.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: item.qty } },
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-inward' });
+    broadcast({ type: 'DATA_UPDATED', path: 'inventory' });
+
+    broadcast({ 
+      type: 'NOTIFICATION', 
+      message: `New Material Transfer Inward: ${transfer.id}`,
+      severity: 'info',
+      senderId: (req as any).user?._id
+    });
+
+    res.status(201).json({ success: true, data: transfer });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/material-transfer-inward/:id', protect, async (req: any, res: any) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { id } = req.params;
+    const transfer = await MaterialTransferInward.findOne({ id });
+    if (!transfer) {
+      return res.status(404).json({ success: false, message: 'Transfer not found' });
+    }
+
+    // Deduct stock
+    for (const item of transfer.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: -item.qty } },
+        { session }
+      );
+    }
+
+    await MaterialTransferInward.deleteOne({ id }, { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-inward' });
+    broadcast({ type: 'DATA_UPDATED', path: 'inventory' });
+
+    res.json({ success: true, message: 'Transfer deleted and stock deducted' });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/material-transfer-inward/:id', protect, async (req: any, res: any) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { id } = req.params;
+    const newData = req.body;
+    const oldTransfer = await MaterialTransferInward.findOne({ id });
+    
+    if (!oldTransfer) {
+      return res.status(404).json({ success: false, message: 'Transfer not found' });
+    }
+
+    // 1. Restore old stock (subtract what was added)
+    for (const item of oldTransfer.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: -item.qty } },
+        { session }
+      );
+    }
+
+    // 2. Update transfer
+    const updatedTransfer = await MaterialTransferInward.findOneAndUpdate(
+      { id },
+      newData,
+      { new: true, session }
+    );
+
+    // 3. Add new stock
+    for (const item of newData.items) {
+      await Inventory.findOneAndUpdate(
+        { sku: item.sku },
+        { $inc: { liveStock: item.qty } },
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    broadcast({ type: 'DATA_UPDATED', path: 'material-transfer-inward' });
+    broadcast({ type: 'DATA_UPDATED', path: 'inventory' });
+
+    res.json({ success: true, data: updatedTransfer });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 createCrudRoutes(Inventory, 'inventory');
 createCrudRoutes(Catalogue, 'catalogue');
-createCrudRoutes(Vendor, 'vendors');
+createCrudRoutes(Supplier, 'suppliers');
 createCrudRoutes(PurchaseOrder, 'pos');
 createCrudRoutes(MaterialPlan, 'planning');
 createCrudRoutes(GRN, 'grn');
@@ -997,7 +1321,7 @@ router.put('/settings', protect, async (req, res) => {
 // Seed data endpoint
 router.post('/seed', protect, async (req, res) => {
   try {
-    const { SEED_INVENTORY, SEED_CATALOGUE, SEED_VENDORS, SEED_POS } = req.body;
+    const { SEED_INVENTORY, SEED_CATALOGUE, SEED_SUPPLIERS, SEED_POS } = req.body;
     
     await Inventory.deleteMany({});
     await Inventory.insertMany(SEED_INVENTORY);
@@ -1005,8 +1329,8 @@ router.post('/seed', protect, async (req, res) => {
     await Catalogue.deleteMany({});
     await Catalogue.insertMany(SEED_CATALOGUE);
     
-    await Vendor.deleteMany({});
-    await Vendor.insertMany(SEED_VENDORS);
+    await Supplier.deleteMany({});
+    await Supplier.insertMany(SEED_SUPPLIERS);
     
     await PurchaseOrder.deleteMany({});
     await PurchaseOrder.insertMany(SEED_POS);

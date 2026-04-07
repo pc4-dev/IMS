@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAppStore } from "../store";
 import { Card, Btn, Modal, Field, SField, ImageUpload } from "../components/ui";
 import { Search, CheckCircle } from "lucide-react";
-import { Inward, InventoryItem, Vendor } from "../types";
+import { Inward, InventoryItem, Supplier } from "../types";
 import { genId, todayStr } from "../utils";
 import { PROJECTS, CATEGORIES } from "../data";
 import { toast } from "react-hot-toast";
@@ -25,14 +25,12 @@ const INITIAL_INWARD: Partial<Inward> = {
 export const PublicInward = () => {
   const { 
     fetchPublicInventory, 
-    fetchPublicVendors,
     submitPublicInward,
     uploadPublicImage,
     actionLoading
   } = useAppStore();
 
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [newInward, setNewInward] = useState<Partial<Inward>>(INITIAL_INWARD);
   const [searchItem, setSearchItem] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -42,12 +40,8 @@ export const PublicInward = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [inv, vend] = await Promise.all([
-          fetchPublicInventory(),
-          fetchPublicVendors()
-        ]);
+        const inv = await fetchPublicInventory();
         setInventory(inv);
-        setVendors(vend);
       } catch (error) {
         toast.error("Failed to load necessary data");
       }

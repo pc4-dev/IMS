@@ -1,4 +1,4 @@
-import { InventoryItem, Vendor, PurchaseOrder, CatalogueEntry } from "./types";
+import { InventoryItem, Supplier, PurchaseOrder, CatalogueEntry } from "./types";
 
 export const SEED_INVENTORY: InventoryItem[] = [
   {
@@ -180,9 +180,9 @@ export const SEED_CATALOGUE: CatalogueEntry[] = [
   },
 ];
 
-export const SEED_VENDORS: Vendor[] = [
+export const SEED_SUPPLIERS: Supplier[] = [
   {
-    id: "V001",
+    id: "S001",
     email: "contact@shreecement.com",
     companyName: "Shree Cement Ltd",
     ownerName: "Rajesh Kumar",
@@ -207,7 +207,7 @@ export const SEED_VENDORS: Vendor[] = [
     gst: "23AAAAA0000A1Z5",
   },
   {
-    id: "V002",
+    id: "S002",
     email: "sales@havellsdist.com",
     companyName: "Havells Distributor",
     ownerName: "Amit Jain",
@@ -240,7 +240,7 @@ export const SEED_POS: PurchaseOrder[] = [
     phase: "Phase 1",
     workType: "Civil",
     milestone: "Foundation",
-    vendor: "Shree Cement Ltd",
+    supplier: "Shree Cement Ltd",
     items: [
       {
         sku: "Con/Cem/0321",
@@ -266,7 +266,7 @@ export const SEED_POS: PurchaseOrder[] = [
     phase: "Phase 2",
     workType: "Electrical",
     milestone: "Slab",
-    vendor: "Havells Distributor",
+    supplier: "Havells Distributor",
     items: [
       {
         sku: "Ele/Mod/0001",
@@ -292,7 +292,7 @@ export const SEED_POS: PurchaseOrder[] = [
     phase: "Phase 1",
     workType: "Plumbing",
     milestone: "Structure",
-    vendor: "MP Pipes & Fittings",
+    supplier: "MP Pipes & Fittings",
     items: [
       {
         sku: "Pvc/Pip/0073",
@@ -318,6 +318,7 @@ export const PROJECTS = [
   "Girwai",
   "Regal Garden",
   "Garden city",
+  "Garden city Store",
   "Neoteric Head office",
   "Garden City Villa",
   "Eden Garden",

@@ -128,7 +128,7 @@ const INITIAL_ITEM: InventoryItem = {
   condition: "New",
   openingStock: 0,
   liveStock: 0,
-  sourceSite: "",
+  sourceSite: "Garden city Store",
   lastProject: "",
 };
 
@@ -157,7 +157,7 @@ export const Inventory = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [tagData, setTagData] = useState({
     condition: "New",
-    sourceSite: "",
+    sourceSite: "Garden city Store",
     lastProject: "",
     quantity: 0,
   });

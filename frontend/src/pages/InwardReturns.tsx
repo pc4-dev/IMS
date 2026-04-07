@@ -46,7 +46,7 @@ export const InwardReturns = () => {
     qty: 0,
     unit: "",
     condition: "Good",
-    vendor: "",
+    supplier: "",
     remarks: "",
     handoverTo: "",
     materialPhotoUrl: "",
@@ -70,7 +70,7 @@ export const InwardReturns = () => {
     const newErrors: Record<string, string> = {};
     if (!data.sku) newErrors.sku = "Item selection is required";
     if (!data.qty || data.qty <= 0) newErrors.qty = "Valid quantity is required";
-    if (!data.vendor) newErrors.vendor = "Vendor is required";
+    if (!data.supplier) newErrors.supplier = "Supplier is required";
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -96,7 +96,7 @@ export const InwardReturns = () => {
       unit: newReturn.unit!,
       date: todayStr(),
       condition: newReturn.condition as any,
-      vendor: newReturn.vendor!,
+      supplier: newReturn.supplier!,
       remarks: newReturn.remarks,
       handoverTo: newReturn.handoverTo,
       materialPhotoUrl: newReturn.materialPhotoUrl,
@@ -120,7 +120,7 @@ export const InwardReturns = () => {
         qty: 0,
         unit: "",
         condition: "Good",
-        vendor: "",
+        supplier: "",
         remarks: "",
         handoverTo: "",
       });
@@ -162,7 +162,7 @@ export const InwardReturns = () => {
     <div className="space-y-6">
       <PageHeader
         title="Inward Returns"
-        sub="Manage material returns to vendors (Subtracts from Inventory)"
+        sub="Manage material returns to suppliers (Subtracts from Inventory)"
         actions={
           <div className="flex gap-2">
             <Btn
@@ -194,7 +194,7 @@ export const InwardReturns = () => {
                   Date
                 </th>
                 <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
-                  Vendor
+                  Supplier
                 </th>
                 <th className="px-4 py-3 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">
                   Item
@@ -220,7 +220,7 @@ export const InwardReturns = () => {
                     {ret.date}
                   </td>
                   <td className="px-4 py-3 text-[13px] text-[#1A1A2E] dark:text-gray-300">
-                    {ret.vendor}
+                    {ret.supplier}
                   </td>
                   <td className="px-4 py-3 text-[13px] text-[#1A1A2E] dark:text-gray-300">
                     {ret.name}{" "}
@@ -353,13 +353,13 @@ export const InwardReturns = () => {
             </div>
 
             <Field
-              label="Vendor"
-              value={newReturn.vendor}
+              label="Supplier"
+              value={newReturn.supplier}
               onChange={(e: any) =>
-                setNewReturn({ ...newReturn, vendor: e.target.value })
+                setNewReturn({ ...newReturn, supplier: e.target.value })
               }
               required
-              error={errors.vendor}
+              error={errors.supplier}
             />
             <Field
               label="Handover To"
@@ -413,8 +413,8 @@ export const InwardReturns = () => {
                 <p className="text-[13px] font-bold text-gray-900 dark:text-white">{selectedReturn.date}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Vendor</p>
-                <p className="text-[13px] font-bold text-gray-900 dark:text-white">{selectedReturn.vendor}</p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Supplier</p>
+                <p className="text-[13px] font-bold text-gray-900 dark:text-white">{selectedReturn.supplier}</p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Condition</p>

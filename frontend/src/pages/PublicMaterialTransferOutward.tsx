@@ -1,26 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useAppStore } from "../store";
 import { Card, Btn, Modal, Field, SField, ImageUpload } from "../components/ui";
-import { Search, CheckCircle, AlertTriangle } from "lucide-react";
+import { Search, CheckCircle, AlertTriangle, Trash2, Plus } from "lucide-react";
 import { MaterialTransferOutward, InventoryItem } from "../types";
 import { genId, todayStr } from "../utils";
 import { PROJECTS, CATEGORIES, UNITS } from "../data";
 import { toast } from "react-hot-toast";
 
 const INITIAL_TRANSFER: Partial<MaterialTransferOutward> = {
-  sku: "",
-  name: "",
-  qty: 0,
-  unit: "",
-  fromLocation: "",
+  fromLocation: "Garden city Store",
   toLocation: "",
   handoverTo: "",
-  project: "",
-  category: "",
-  materialPhotoUrl: "",
   handoverPhotoUrl: "",
   remarks: "",
   module: "Public",
+  items: [],
 };
 
 export const PublicMaterialTransferOutward = () => {
@@ -52,17 +46,58 @@ export const PublicMaterialTransferOutward = () => {
 
   const validateForm = (data: any) => {
     const newErrors: Record<string, string> = {};
-    if (!data.sku) newErrors.sku = "Item selection is required";
-    if (!data.project) newErrors.project = "Project is required";
-    if (!data.category) newErrors.category = "Category is required";
-    if (!data.qty || data.qty <= 0) newErrors.qty = "Valid quantity is required";
-    if (!data.unit) newErrors.unit = "Unit is required";
-    if (!data.fromLocation) newErrors.fromLocation = "From Location is required";
-    if (!data.toLocation) newErrors.toLocation = "To Location is required";
+    if (!data.fromLocation) newErrors.fromLocation = "Source Site is required";
+    if (!data.toLocation) newErrors.toLocation = "Destination Site is required";
     if (!data.handoverTo) newErrors.handoverTo = "Handover To is required";
+    if (!data.items || data.items.length === 0) {
+      newErrors.items = "At least one item is required";
+    } else {
+      data.items.forEach((item: any, index: number) => {
+        if (!item.sku) newErrors[`item-${index}-sku`] = "Item selection is required";
+        if (!item.qty || item.qty <= 0) newErrors[`item-${index}-qty`] = "Valid quantity is required";
+      });
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const addItem = () => {
+    setNewTransfer(prev => ({
+      ...prev,
+      items: [
+        ...(prev.items || []),
+        { sku: "", name: "", qty: 0, unit: "", category: "" }
+      ]
+    }));
+  };
+
+  const removeItem = (index: number) => {
+    setNewTransfer(prev => ({
+      ...prev,
+      items: prev.items?.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateItem = (index: number, field: string, value: any) => {
+    setNewTransfer(prev => {
+      const items = [...(prev.items || [])];
+      items[index] = { ...items[index], [field]: value };
+      return { ...prev, items };
+    });
+  };
+
+  const handleItemPhoto = async (index: number, file: File) => {
+    setLoadingField(`item-${index}`);
+    try {
+      const { url } = await uploadPublicImage(file);
+      updateItem(index, 'materialPhotoUrl', url);
+      toast.success("Item photo uploaded");
+    } catch (error: any) {
+      toast.error(`Failed to upload image: ${error.message}`);
+    } finally {
+      setLoadingField(null);
+    }
   };
 
   const handleMaterialPhoto = async (file: File) => {
@@ -97,29 +132,25 @@ export const PublicMaterialTransferOutward = () => {
       return;
     }
 
-    const inv = inventory.find((i) => i.sku === newTransfer.sku);
-    if (!inv || inv.liveStock < newTransfer.qty!) {
-      setErrors({ qty: "Insufficient stock available!" });
-      toast.error("Insufficient stock!");
-      return;
+    // Stock validation
+    for (const item of newTransfer.items!) {
+      const inv = inventory.find((i) => i.sku === item.sku);
+      if (!inv || inv.liveStock < item.qty) {
+        toast.error(`Insufficient stock for ${item.name}!`);
+        return;
+      }
     }
 
     const transfer: MaterialTransferOutward = {
       id: genId("PUB-MTO", Date.now() % 10000),
-      sku: newTransfer.sku!,
-      name: newTransfer.name!,
-      qty: Number(newTransfer.qty!),
-      unit: newTransfer.unit!,
       date: todayStr(),
       fromLocation: newTransfer.fromLocation!,
       toLocation: newTransfer.toLocation!,
       handoverTo: newTransfer.handoverTo!,
-      project: newTransfer.project,
-      category: newTransfer.category,
-      materialPhotoUrl: newTransfer.materialPhotoUrl,
       handoverPhotoUrl: newTransfer.handoverPhotoUrl,
       remarks: newTransfer.remarks,
       module: "Public",
+      items: newTransfer.items as any[],
     };
 
     try {
@@ -180,172 +211,148 @@ export const PublicMaterialTransferOutward = () => {
         </div>
 
         <Card className="p-6 sm:p-8">
-          <div className="space-y-6">
+          <div className="space-y-8">
             {errors.form && (
               <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-400 text-[13px]">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 {errors.form}
               </div>
             )}
-
-            <div className="relative">
-              <label className="block text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider mb-1">
-                Select Item *
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search inventory..."
-                  value={searchItem}
-                  onChange={(e) => setSearchItem(e.target.value)}
-                  className={`w-full pl-9 pr-4 py-2 border rounded-lg text-[13px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-[#F97316] ${errors.sku ? "border-red-500" : "border-[#E8ECF0] dark:border-gray-700"}`}
-                />
+            
+            <div className="bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <SField label="Source Site *" value={newTransfer.fromLocation} onChange={(e: any) => setNewTransfer(prev => ({ ...prev, fromLocation: e.target.value }))} options={PROJECTS} error={errors.fromLocation} />
+                <SField label="Destination Site *" value={newTransfer.toLocation} onChange={(e: any) => setNewTransfer(prev => ({ ...prev, toLocation: e.target.value }))} options={PROJECTS} error={errors.toLocation} />
+                <Field label="Handover To *" value={newTransfer.handoverTo} onChange={(e: any) => setNewTransfer(prev => ({ ...prev, handoverTo: e.target.value }))} error={errors.handoverTo} />
               </div>
-              {errors.sku && (
-                <p className="text-[11px] text-red-500 mt-1">{errors.sku}</p>
-              )}
-              {searchItem && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-900 border border-[#E8ECF0] dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {inventory
-                    .filter((i) =>
-                      (i.itemName?.toLowerCase().includes(searchItem.toLowerCase()) ||
-                      i.sku?.toLowerCase().includes(searchItem.toLowerCase())) &&
-                      i.liveStock > 0
-                    )
-                    .map((i) => (
-                      <div
-                        key={i.sku}
-                        onClick={() => selectItem(i)}
-                        className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-[13px] flex justify-between items-center"
-                      >
-                        <span className="text-gray-900 dark:text-white">{i.itemName} ({i.sku})</span>
-                        <span className="font-bold text-[#10B981] dark:text-emerald-400">
-                          {i.liveStock} {i.unit}
-                        </span>
-                      </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+                <div className="md:col-span-1">
+                  <label className="block text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider mb-2">Handover Photo</label>
+                  <ImageUpload 
+                    id="handover-photo-transfer-pub" 
+                    value={newTransfer.handoverPhotoUrl} 
+                    onChange={handleHandoverPhoto} 
+                    loading={loadingField === "handover"} 
+                    small 
+                  />
+                </div>
+                <div className="md:col-span-3 space-y-1">
+                  <label className="block text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider mb-1.5">Remarks</label>
+                  <textarea
+                    className="w-full px-4 py-2.5 border border-[#E8ECF0] dark:border-gray-700 rounded-lg text-[13px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/10 min-h-[60px] transition-all"
+                    placeholder="Enter any additional notes..."
+                    value={newTransfer.remarks}
+                    onChange={(e) => setNewTransfer(prev => ({ ...prev, remarks: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center px-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 bg-[#F97316] rounded-full" />
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Items to Transfer</h3>
+                </div>
+                <Btn label="Add Item" icon={Plus} small onClick={addItem} />
+              </div>
+
+              <div className="overflow-x-auto border border-[#E8ECF0] dark:border-gray-800 rounded-xl">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-[#E8ECF0] dark:border-gray-800">
+                      <th className="px-4 py-2 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">Item Selection</th>
+                      <th className="px-4 py-2 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">Details</th>
+                      <th className="px-4 py-2 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">Quantity</th>
+                      <th className="px-4 py-2 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider">Image</th>
+                      <th className="px-4 py-2 text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider text-right"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E8ECF0] dark:divide-gray-800">
+                    {newTransfer.items?.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="px-4 py-3 min-w-[250px]">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Search SKU or Name..."
+                              className={`w-full px-3 py-1.5 border rounded text-[12px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-[#F97316] ${errors[`item-${idx}-sku`] ? "border-red-500" : "border-[#E8ECF0] dark:border-gray-700"}`}
+                              value={item.sku ? `${item.name} (${item.sku})` : searchItem}
+                              onChange={(e) => {
+                                if (item.sku) {
+                                  updateItem(idx, 'sku', '');
+                                  updateItem(idx, 'name', '');
+                                }
+                                setSearchItem(e.target.value);
+                              }}
+                            />
+                            {!item.sku && searchItem && (
+                              <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-900 border border-[#E8ECF0] dark:border-gray-700 rounded shadow-lg max-h-32 overflow-y-auto">
+                                {inventory
+                                  .filter(inv => inv.itemName.toLowerCase().includes(searchItem.toLowerCase()) || inv.sku.toLowerCase().includes(searchItem.toLowerCase()))
+                                  .map(inv => (
+                                    <div
+                                      key={inv.sku}
+                                      className="px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-[12px]"
+                                      onClick={() => {
+                                        updateItem(idx, 'sku', inv.sku);
+                                        updateItem(idx, 'name', inv.itemName);
+                                        updateItem(idx, 'unit', inv.unit);
+                                        updateItem(idx, 'category', inv.category);
+                                        setSearchItem("");
+                                      }}
+                                    >
+                                      {inv.itemName} ({inv.sku}) - <span className="text-green-600 font-bold">{inv.liveStock}</span>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-[12px] text-gray-500 italic">
+                          {item.sku ? (
+                            <div className="space-y-0.5">
+                              <div>{item.category} | {item.unit}</div>
+                              <div className="text-green-600 font-bold not-italic">
+                                Live Stock: {inventory.find(i => i.sku === item.sku)?.liveStock || 0}
+                              </div>
+                            </div>
+                          ) : 'Select an item first'}
+                        </td>
+                        <td className="px-4 py-3 w-[120px]">
+                          <input
+                            type="number"
+                            className={`w-full px-3 py-1.5 border rounded text-[12px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-[#F97316] ${errors[`item-${idx}-qty`] ? "border-red-500" : "border-[#E8ECF0] dark:border-gray-700"}`}
+                            value={item.qty}
+                            onChange={(e) => updateItem(idx, 'qty', Number(e.target.value))}
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <ImageUpload
+                            id={`item-photo-${idx}`}
+                            value={item.materialPhotoUrl}
+                            onChange={(file) => handleItemPhoto(idx, file)}
+                            loading={loadingField === `item-${idx}`}
+                            small
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Btn icon={Trash2} small outline color="red" onClick={() => removeItem(idx)} />
+                        </td>
+                      </tr>
                     ))}
-                </div>
-              )}
-            </div>
-
-            {newTransfer.sku && (
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-[#E8ECF0] dark:border-gray-700 rounded-lg">
-                <p className="text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase">
-                  Selected Item
-                </p>
-                <div className="flex justify-between items-center mt-1">
-                  <p className="text-[13px] font-medium text-[#1A1A2E] dark:text-white">
-                    {newTransfer.name}
-                  </p>
-                  <p className="text-[13px] font-bold text-[#10B981] dark:text-emerald-400">
-                    Available: {inventory.find(i => i.sku === newTransfer.sku)?.liveStock} {newTransfer.unit}
-                  </p>
-                </div>
+                    {(!newTransfer.items || newTransfer.items.length === 0) && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-[12px]">
+                          No items added yet. Click "Add Item" to start.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SField
-                label="Project *"
-                value={newTransfer.project}
-                onChange={(e: any) =>
-                  setNewTransfer(prev => ({ ...prev, project: e.target.value }))
-                }
-                options={PROJECTS}
-                required
-                error={errors.project}
-              />
-              <SField
-                label="Category *"
-                value={newTransfer.category}
-                onChange={(e: any) =>
-                  setNewTransfer(prev => ({ ...prev, category: e.target.value }))
-                }
-                options={CATEGORIES}
-                required
-                error={errors.category}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="Quantity to Transfer *"
-                type="number"
-                value={newTransfer.qty}
-                onChange={(e: any) =>
-                  setNewTransfer(prev => ({ ...prev, qty: e.target.value }))
-                }
-                required
-                error={errors.qty}
-              />
-              <SField
-                label="Unit *"
-                value={newTransfer.unit}
-                onChange={(e: any) =>
-                  setNewTransfer(prev => ({ ...prev, unit: e.target.value }))
-                }
-                options={UNITS}
-                required
-                error={errors.unit}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="From Location *"
-                value={newTransfer.fromLocation}
-                onChange={(e: any) =>
-                  setNewTransfer(prev => ({ ...prev, fromLocation: e.target.value }))
-                }
-                required
-                error={errors.fromLocation}
-              />
-              <Field
-                label="To Location *"
-                value={newTransfer.toLocation}
-                onChange={(e: any) =>
-                  setNewTransfer(prev => ({ ...prev, toLocation: e.target.value }))
-                }
-                required
-                error={errors.toLocation}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="Handover To *"
-                value={newTransfer.handoverTo}
-                onChange={(e: any) =>
-                  setNewTransfer(prev => ({ ...prev, handoverTo: e.target.value }))
-                }
-                required
-                error={errors.handoverTo}
-              />
-              <Field
-                label="Remarks"
-                value={newTransfer.remarks}
-                onChange={(e: any) =>
-                  setNewTransfer(prev => ({ ...prev, remarks: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <ImageUpload
-                label="Material Photo"
-                id="material-photo-transfer-pub"
-                value={newTransfer.materialPhotoUrl}
-                onChange={handleMaterialPhoto}
-                loading={loadingField === "material"}
-              />
-              <ImageUpload
-                label="Handover Photo"
-                id="handover-photo-transfer-pub"
-                value={newTransfer.handoverPhotoUrl}
-                onChange={handleHandoverPhoto}
-                loading={loadingField === "handover"}
-              />
+              {errors.items && <p className="text-red-500 text-[10px] font-bold uppercase">{errors.items}</p>}
             </div>
 
             <div className="pt-4">
